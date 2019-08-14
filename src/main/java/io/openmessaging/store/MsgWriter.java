@@ -34,6 +34,8 @@ public class MsgWriter {
 
     private long maxDiff = 0;
 
+    private long minDiff = Long.MAX_VALUE;
+
     public MsgWriter(DichotomicIndex index){
         this.index = index;
     }
@@ -56,6 +58,7 @@ public class MsgWriter {
             lastT = message.getT();
             try {
                 maxDiff = Math.max(message.getA() - message.getT(), maxDiff);
+                minDiff = Math.min(message.getA() - message.getT(), minDiff);
                 atBuffer.putLong(message.getA());
                 atBuffer.putLong(message.getT());
             } catch (Exception e) {
@@ -131,7 +134,7 @@ public class MsgWriter {
         Message last = write(Long.MAX_VALUE);
         System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum);
         index.put(last.getT(), msgNum);
-        System.out.println("maxDiff:" + maxDiff);
+        System.out.println("maxDiff:" + maxDiff + ";minDiff:" + minDiff);
 
         atBuffer = null;
         bodyBuffer = null;

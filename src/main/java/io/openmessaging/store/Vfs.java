@@ -1,7 +1,6 @@
 package io.openmessaging.store;
 
 import io.openmessaging.common.Const;
-import sun.nio.ch.FileChannelImpl;
 
 import java.io.File;
 import java.io.IOException;
@@ -126,7 +125,12 @@ public class Vfs {
             } else {
                 int firstLength = (1 << FILE_SIZE) - realOffset;
                 ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(result, 0, firstLength);
-                ((MappedByteBuffer)mappedByteBuffer(endNo).position(0)).get(result, firstLength, size - firstLength);
+                for (int i = startNo + 1; i < endNo; i++) {
+                    ((MappedByteBuffer)mappedByteBuffer(i).position(0)).get(result,
+                            firstLength + (i - startNo - 1) * (1 << FILE_SIZE), 1 << FILE_SIZE);
+                }
+                ((MappedByteBuffer)mappedByteBuffer(endNo).position(0)).get(result,
+                        firstLength + (endNo - startNo - 1) * (1 << FILE_SIZE), size - (endNo - startNo - 1) * (1 << FILE_SIZE) - firstLength);
             }
             return result;
         } catch (Exception e) {
