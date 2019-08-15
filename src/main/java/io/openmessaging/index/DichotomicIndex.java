@@ -102,4 +102,12 @@ public class DichotomicIndex {
 
         return noMeta.getInt(best << 2);
     }
+
+    public void dumpInfo() {
+        StringBuilder stringBuffer = new StringBuilder();
+        for (int i = 0; i < size; i++) {
+            stringBuffer.append((int)tMeta.getLong(i << 3)).append(":").append(i).append(";");
+        }
+        System.out.println(stringBuffer.toString());
+    }
 }

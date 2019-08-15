@@ -30,8 +30,6 @@ public class MsgWriter {
 
     private DichotomicIndex index;
 
-    private volatile boolean isStop = false;
-
     private long maxDiff = 0;
 
     private long minDiff = Long.MAX_VALUE;
@@ -77,10 +75,10 @@ public class MsgWriter {
 
     private Thread thread;
 
-    private Message write(long endT) {
+    private Message write() {
         Message last = null;
         while (true) {
-            Ring<Message> messages = ThreadMessage.dumpStoreMsg(endT);
+            Ring<Message> messages = ThreadMessage.dumpStoreMsg();
             if (messages.isEmpty()) {
                 break;
             }
@@ -98,44 +96,30 @@ public class MsgWriter {
                 e.printStackTrace();
                 return;
             }
-            while (true) {
-                try {
-                    try {
-                        Thread.sleep(3);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        return;
-                    }
-                    if (isStop) {
-                        System.out.println("stop writer...");
-                        return;
-                    }
-                    write(ThreadMessage.minTInAll());
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            try {
+                ThreadMessage.initDump();
+                Message last = write();
+                System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum);
+                index.put(last.getT(), msgNum);
+                index.dumpInfo();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
         }, "writer");
         thread.setPriority(MAX_PRIORITY);
         thread.start();
-
     }
 
     public void stop() {
-        isStop = true;
         try{
+            ThreadMessage.finishDump();
             thread.join();
             thread = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        Message last = write(Long.MAX_VALUE);
-        System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum);
-        index.put(last.getT(), msgNum);
         System.out.println("maxDiff:" + maxDiff + ";minDiff:" + minDiff);
-
         atBuffer = null;
         bodyBuffer = null;
     }
