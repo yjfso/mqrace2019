@@ -3,11 +3,7 @@ package io.openmessaging.bean;
 import io.openmessaging.Message;
 import io.openmessaging.common.Const;
 import io.openmessaging.util.Ring;
-import io.openmessaging.util.StreamLoserTree;
 import io.openmessaging.util.StreamTreeNode;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author yinjianfeng
@@ -15,20 +11,12 @@ import java.util.List;
  */
 public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
 
-    private final static List<ThreadMessage> TM = new ArrayList<>();
-
     private volatile Message minMessage;
 
     private final Ring<Message> messages = new Ring<>(new Message[Const.MAX_PUT_SIZE]);
 
-    private final static Ring<Message> DUMP_MESSAGES = new Ring<>(new Message[Const.MAX_DUMP_SIZE]);
-
-    private volatile static boolean stop = false;
-
     public ThreadMessage() {
-        synchronized (TM) {
-            TM.add(this);
-        }
+        ThreadMessageManager.register(this);
     }
 
     public void put(Message message) {
@@ -43,10 +31,11 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
     public Message pop() {
         final Message pop = minMessage;
         Message newMsg = messages.pop();
-        while (!stop && newMsg == null) {
+        while (!ThreadMessageManager.stop && newMsg == null) {
             try {
                 newMsg = messages.pop();
                 Thread.sleep(3);
+                System.out.println("pop wait...");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -77,65 +66,4 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
         return (int)(message1.getT() - message.getT());
     }
 
-    private static StreamLoserTree<ThreadMessage, Message> streamLoserTree;
-
-    public static void initDump() {
-        streamLoserTree = new StreamLoserTree<>(ThreadMessage.TM);
-    }
-
-    public static void finishDump() {
-        stop = true;
-        streamLoserTree.setEnd(true);
-    }
-
-    public static long minTInAll() {
-        long minT = Long.MAX_VALUE;
-        for (ThreadMessage threadMessage : ThreadMessage.TM) {
-            Message message = threadMessage.messages.getLast();
-            if (message != null) {
-                minT = Math.min(minT, message.getT());
-            }
-        }
-        System.out.println("minT:" + minT);
-        return minT;
-    }
-
-    public static Ring<Message> dumpStoreMsg() {
-        while (!DUMP_MESSAGES.isFull()) {
-            Message message = streamLoserTree.askWinner();
-            if (message == null) {
-                break;
-            }
-            DUMP_MESSAGES.add(message);
-        }
-        return DUMP_MESSAGES;
-//        final List<ThreadMessage> list = new ArrayList<>(ThreadMessage.TM);
-//        while (list.size() > 0 && !DUMP_MESSAGES.isFull()) {
-//            long minT = Long.MAX_VALUE;
-//            ThreadMessage minMessage = null;
-//            for (int i = list.size() - 1; i >= 0; i--) {
-//                ThreadMessage threadMessage = list.get(i);
-//
-//                final Message message = threadMessage.getMinMessage();
-//
-//                if (message == null || message.getT() > endT) {
-//                    list.remove(i);
-//                    continue;
-//                }
-//                if (message.getT() < minT) {
-//                    minT = message.getT();
-//                    minMessage = threadMessage;
-//                }
-//            }
-//            if (minMessage != null) {
-//                DUMP_MESSAGES.add(minMessage.surePop());
-//            }
-//        }
-//        return DUMP_MESSAGES;
-    }
-
-    @Override
-    public String toString() {
-        return "(T:" +String.valueOf(minMessage.getT()) + ")";
-    }
 }

@@ -1,7 +1,7 @@
 package io.openmessaging.store;
 
 import io.openmessaging.Message;
-import io.openmessaging.bean.ThreadMessage;
+import io.openmessaging.bean.ThreadMessageManager;
 import io.openmessaging.common.Const;
 import io.openmessaging.index.DichotomicIndex;
 import io.openmessaging.util.Ring;
@@ -78,7 +78,7 @@ public class MsgWriter {
     private Message write() {
         Message last = null;
         while (true) {
-            Ring<Message> messages = ThreadMessage.dumpStoreMsg();
+            Ring<Message> messages = ThreadMessageManager.dumpStoreMsg();
             if (messages.isEmpty()) {
                 break;
             }
@@ -97,7 +97,7 @@ public class MsgWriter {
                 return;
             }
             try {
-                ThreadMessage.initDump();
+                ThreadMessageManager.initDump();
                 Message last = write();
                 System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum);
                 index.put(last.getT(), msgNum);
@@ -107,13 +107,13 @@ public class MsgWriter {
             }
 
         }, "writer");
-        thread.setPriority(MAX_PRIORITY);
+//        thread.setPriority(MAX_PRIORITY);
         thread.start();
     }
 
     public void stop() {
         try{
-            ThreadMessage.finishDump();
+            ThreadMessageManager.finishDump();
             thread.join();
             thread = null;
         } catch (InterruptedException e) {

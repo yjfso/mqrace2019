@@ -7,8 +7,6 @@ import io.openmessaging.store.MsgReader;
 import io.openmessaging.store.MsgWriter;
 
 import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 
 /**
  * 这是一个简单的基于内存的实现，以方便选手理解题意；
@@ -21,8 +19,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
     private BoolLock readInit = new BoolLock();
 
     private BoolLock avgInit = new BoolLock();
-
-    private NavigableMap<Long, List<Message>> msgMap = new TreeMap<Long, List<Message>>();
 
     private ThreadLocal<ThreadMessage> messages = ThreadLocal.withInitial(ThreadMessage::new);
 
@@ -53,8 +49,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
-    private long maxTDiff = 0;
-
     @Override
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         if (readInit.tryLock()) {
@@ -70,24 +64,12 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 e.printStackTrace();
             }
         }
-        maxTDiff = Math.max(tMax - tMin, maxTDiff);
         return msgReader.getMessage(aMin, aMax, tMin, tMax);
     }
 
 
     @Override
     public long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
-        if (avgInit.tryLock()) {
-            System.out.println("maxTDiff:" + maxTDiff);
-            maxTDiff = 0;
-            System.out.println("=======");
-        }
-        long maxTdiff = tMax - tMin;
-
-        if (maxTdiff > maxTDiff) {
-            System.out.println("maxTDiff:" + maxTdiff);
-            maxTDiff = maxTdiff;
-        }
         return msgReader.getAvg(aMin, aMax, tMin, tMax);
     }
 

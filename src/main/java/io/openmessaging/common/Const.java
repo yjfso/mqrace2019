@@ -8,9 +8,11 @@ public class Const {
 
     public final static String DATA_PATH = "/alidata1/race2019/data/";
 
-    public final static int MSG_NUM = 2000000000;
+    public final static int MSG_NUM = 2100000000;
 
     public final static int INDEX_INTERVAL = 511;
+
+    public final static int BYTE_MAX_CAP = 512;
 
     public final static int BODY_SIZE = 34;
 
