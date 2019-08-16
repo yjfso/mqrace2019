@@ -65,7 +65,7 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
         if (message1 == null) {
             return 1;
         }
-        return (int)(message1.getT() - message.getT());
+        return message1.getT() >= message.getT() ? 1 : -1;
     }
 
     @Override
