@@ -85,7 +85,7 @@ public class MsgWriter {
     public void start() {
         thread = new Thread(() -> {
             try {
-                Thread.sleep(300);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
