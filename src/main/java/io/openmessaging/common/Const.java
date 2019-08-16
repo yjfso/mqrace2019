@@ -16,7 +16,7 @@ public class Const {
 
     public final static int BODY_SIZE = 34;
 
-    public final static int MAX_DUMP_SIZE = 10 * 1024;
+    public final static int MAX_DUMP_SIZE = 20 * 1024;
 
     public final static int MAX_PUT_SIZE = 1000000;
 

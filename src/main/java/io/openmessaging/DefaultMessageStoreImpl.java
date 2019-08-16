@@ -18,8 +18,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     private BoolLock readInit = new BoolLock();
 
-    private BoolLock avgInit = new BoolLock();
-
     private ThreadLocal<ThreadMessage> messages = ThreadLocal.withInitial(ThreadMessage::new);
 
     private DichotomicIndex index = new DichotomicIndex();
@@ -28,21 +26,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     private volatile MsgReader msgReader;
 
-    private long minA = Integer.MAX_VALUE;
-
-    private long minT = Integer.MAX_VALUE;
-
-    private long maxA = 0;
-
-    private long maxT = 0;
-
     @Override
     public void put(Message message) {
-        minA = Math.min(message.getA(), minA);
-        maxA = Math.max(message.getA(), maxA);
-        minT = Math.min(message.getT(), minT);
-        maxT = Math.max(message.getT(), maxT);
-
         messages.get().put(message);
         if (putInit.tryLock()) {
             msgWriter.start();
@@ -53,7 +38,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         if (readInit.tryLock()) {
             msgWriter.stop();
-            System.out.println(minA + "," + maxA + "," + minT + "," + maxT);
             msgReader = new MsgReader(index);
             msgWriter = null;
         }

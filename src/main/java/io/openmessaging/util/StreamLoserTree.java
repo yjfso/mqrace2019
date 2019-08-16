@@ -46,14 +46,16 @@ public class StreamLoserTree<T extends StreamTreeNode<T, K>, K> {
 
     public K askWinner() {
         if (size == 0) {
+            System.out.println("threadMessages size = 0, write done");
             return null;
         }
         T t = leaves.get(tree[0]);
         K k = t.pop();
-        if (!t.isEmpty()) {
-            adjust(tree[0]);
-        } else {
+        if (t.isEmpty()) {
+            System.out.println(t + " is empty, will remove");
             remove(tree[0]);
+        } else {
+            adjust(tree[0]);
         }
         return k;
     }

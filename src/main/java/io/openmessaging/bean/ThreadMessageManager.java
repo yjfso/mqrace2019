@@ -18,8 +18,6 @@ public class ThreadMessageManager {
 
     private final static Ring<Message> DUMP_MESSAGES = new Ring<>(new Message[Const.MAX_DUMP_SIZE]);
 
-    volatile static boolean stop = false;
-
     public static void register(ThreadMessage threadMessage) {
         synchronized (TM) {
             TM.add(threadMessage);
@@ -33,7 +31,6 @@ public class ThreadMessageManager {
     }
 
     public static void finishDump() {
-        stop = true;
         streamLoserTree.setEnd(true);
     }
 

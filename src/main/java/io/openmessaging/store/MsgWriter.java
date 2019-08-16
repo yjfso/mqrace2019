@@ -30,10 +30,6 @@ public class MsgWriter {
 
     private DichotomicIndex index;
 
-    private long maxDiff = 0;
-
-    private long minDiff = Long.MAX_VALUE;
-
     public MsgWriter(DichotomicIndex index){
         this.index = index;
     }
@@ -55,8 +51,6 @@ public class MsgWriter {
             }
             lastT = message.getT();
             try {
-                maxDiff = Math.max(message.getA() - message.getT(), maxDiff);
-                minDiff = Math.min(message.getA() - message.getT(), minDiff);
                 atBuffer.putLong(message.getA());
                 atBuffer.putLong(message.getT());
             } catch (Exception e) {
@@ -91,10 +85,9 @@ public class MsgWriter {
     public void start() {
         thread = new Thread(() -> {
             try {
-                Thread.sleep(10);
+                Thread.sleep(300);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                return;
             }
             try {
                 ThreadMessageManager.initDump();
@@ -105,9 +98,8 @@ public class MsgWriter {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }, "writer");
-//        thread.setPriority(MAX_PRIORITY);
+        thread.setPriority(MAX_PRIORITY);
         thread.start();
     }
 
@@ -119,7 +111,7 @@ public class MsgWriter {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("maxDiff:" + maxDiff + ";minDiff:" + minDiff);
+        System.out.println("=====write done======");
         atBuffer = null;
         bodyBuffer = null;
     }

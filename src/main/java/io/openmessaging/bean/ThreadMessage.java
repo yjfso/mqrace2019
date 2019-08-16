@@ -15,6 +15,8 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
 
     private final Ring<Message> messages = new Ring<>(new Message[Const.MAX_PUT_SIZE]);
 
+    private final Thread thread = Thread.currentThread();
+
     public ThreadMessage() {
         ThreadMessageManager.register(this);
     }
@@ -31,11 +33,11 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
     public Message pop() {
         final Message pop = minMessage;
         Message newMsg = messages.pop();
-        while (!ThreadMessageManager.stop && newMsg == null) {
+        while (newMsg == null && thread.isAlive()) {
             try {
                 newMsg = messages.pop();
                 Thread.sleep(3);
-                System.out.println("pop wait...");
+                System.out.println("pop wait..." + thread.getName() + ";" + thread.isAlive());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -66,4 +68,8 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
         return (int)(message1.getT() - message.getT());
     }
 
+    @Override
+    public String toString() {
+        return "threadMessage[" + thread.getName() + "]";
+    }
 }
