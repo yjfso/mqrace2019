@@ -44,6 +44,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         if (readInit.tryLock()) {
             msgWriter.stop();
             msgReader = new MsgReader(index);
+            System.out.println("======reader is ready=======");
             msgWriter = null;
         }
         while (msgReader == null) {
