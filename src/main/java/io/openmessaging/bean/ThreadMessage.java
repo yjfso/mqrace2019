@@ -41,9 +41,9 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
         Message newMsg = messages.pop();
         while (newMsg == null && thread.isAlive()) {
             try {
+                Thread.sleep(10);
+//                System.out.println("pop wait..." + messages + thread.getName() + ";" + thread.isAlive());
                 newMsg = messages.pop();
-                Thread.sleep(3);
-                System.out.println("pop wait..." + thread.getName() + ";" + thread.isAlive());
             } catch (Exception e) {
                 e.printStackTrace();
             }

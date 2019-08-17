@@ -42,10 +42,6 @@ public class MsgWriter {
         boolean needIndex = false;
         Message message;
         while ((message = messages.pop()) != null) {
-            if (message.getT() < lastT) {
-                System.out.println("=============error=============");
-                System.out.println(message.getT() + "<" + lastT);
-            }
             if (lastT != message.getT()) {
                 if (needIndex || (msgNum & Const.INDEX_INTERVAL) == 0) {
                     index.put(message.getT(), msgNum);

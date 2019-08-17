@@ -17,17 +17,11 @@ public class Ring<E> {
     }
 
     public void add(E e) {
-        if (es[writeIndex] != null) {
-            while (true) {
-                try {
-//                    System.out.println("Ring full, wait...");
-                    Thread.sleep(10);
-                    if (es[writeIndex] == null) {
-                        break;
-                    }
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
+        while (es[writeIndex] != null) {
+            try {
+                Thread.sleep(3);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
             }
         }
         es[writeIndex++] = e;
@@ -42,10 +36,9 @@ public class Ring<E> {
 
     public E pop() {
         final E e = es[readIndex];
-        es[readIndex] = null;
         if (e != null) {
-            readIndex ++;
-            if (readIndex == es.length) {
+            es[readIndex] = null;
+            if (++readIndex == es.length) {
                 readIndex = 0;
             }
         }
@@ -64,4 +57,8 @@ public class Ring<E> {
         return readIndex == writeIndex && es[readIndex] == null;
     }
 
+    @Override
+    public String toString() {
+        return "readIndex" + readIndex + ";writeIndex:" + writeIndex;
+    }
 }
