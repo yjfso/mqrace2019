@@ -8,8 +8,6 @@ import io.openmessaging.util.Ring;
 
 import java.nio.ByteBuffer;
 
-import static java.lang.Thread.MAX_PRIORITY;
-
 /**
  * @author yinjianfeng
  * @date 2019/8/3
@@ -30,8 +28,11 @@ public class MsgWriter {
 
     private DichotomicIndex index;
 
-    public MsgWriter(DichotomicIndex index){
+    private ThreadMessageManager threadMessageManager;
+
+    public MsgWriter(DichotomicIndex index, ThreadMessageManager threadMessageManager){
         this.index = index;
+        this.threadMessageManager = threadMessageManager;
     }
 
     private void write(Ring<Message> messages) {
@@ -41,6 +42,10 @@ public class MsgWriter {
         boolean needIndex = false;
         Message message;
         while ((message = messages.pop()) != null) {
+            if (message.getT() < lastT) {
+                System.out.println("=============error=============");
+                System.out.println(message.getT() + "<" + lastT);
+            }
             if (lastT != message.getT()) {
                 if (needIndex || (msgNum & Const.INDEX_INTERVAL) == 0) {
                     index.put(message.getT(), msgNum);
@@ -70,9 +75,10 @@ public class MsgWriter {
     private Thread thread;
 
     private Message write() {
+        threadMessageManager.init();
         Message last = null;
         while (true) {
-            Ring<Message> messages = ThreadMessageManager.dumpStoreMsg();
+            Ring<Message> messages = threadMessageManager.dumpStoreMsg();
             if (messages.isEmpty()) {
                 break;
             }
@@ -81,6 +87,7 @@ public class MsgWriter {
         }
         return last;
     }
+
     @SuppressWarnings("AlibabaAvoidManuallyCreateThread")
     public void start() {
         thread = new Thread(() -> {
@@ -90,7 +97,6 @@ public class MsgWriter {
                 e.printStackTrace();
             }
             try {
-                ThreadMessageManager.initDump();
                 Message last = write();
                 System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum);
                 index.put(last.getT(), msgNum);
@@ -98,16 +104,16 @@ public class MsgWriter {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, "writer");
-        thread.setPriority(MAX_PRIORITY);
+        }, "writer...");
+//        thread.setPriority(MAX_PRIORITY);
         thread.start();
     }
 
     public void stop() {
         try{
-            ThreadMessageManager.finishDump();
             thread.join();
             thread = null;
+            threadMessageManager = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

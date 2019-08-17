@@ -17,8 +17,8 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
 
     private final Thread thread = Thread.currentThread();
 
-    public ThreadMessage() {
-        ThreadMessageManager.register(this);
+    public ThreadMessage(ThreadMessageManager threadMessageManager) {
+        threadMessageManager.register(this);
     }
 
     public void put(Message message) {
@@ -56,16 +56,16 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
     }
 
     @Override
-    public int compareTo(ThreadMessage o) {
+    public boolean lessAndEqual(ThreadMessage o) {
         final Message message = minMessage;
         if (message == null) {
-            return -1;
+            return true;
         }
         final Message message1 = o.getMinMessage();
         if (message1 == null) {
-            return 1;
+            return false;
         }
-        return message1.getT() >= message.getT() ? 1 : -1;
+        return message1.getT() > message.getT();
     }
 
     @Override

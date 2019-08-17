@@ -14,8 +14,6 @@ public class StreamLoserTree<T extends StreamTreeNode<T, K>, K> {
 
     private List<T> leaves;
 
-    private volatile boolean isEnd = false;
-
     public StreamLoserTree(List<T> leaves) {
         this.leaves = leaves;
         this.size = (byte) leaves.size();
@@ -38,10 +36,6 @@ public class StreamLoserTree<T extends StreamTreeNode<T, K>, K> {
         for (byte i = (byte)(size - 1); i >= 0; --i) {
             adjust(i);
         }
-    }
-
-    public void setEnd(boolean end) {
-        isEnd = end;
     }
 
     public K askWinner() {
@@ -74,18 +68,7 @@ public class StreamLoserTree<T extends StreamTreeNode<T, K>, K> {
             } else {
                 T t1 = leaves.get(winner);
                 T t2 = leaves.get(tree[node]);
-                while (t1.isEmpty() || t2.isEmpty()) {
-                    if (isEnd) {
-                        break;
-                    }
-                    try {
-                        System.out.println("stream loser tree node empty");
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                if (t1.compareTo(t2) < 0) {
+                if (t2.lessAndEqual(t1)) {
                     byte tmp = winner;
                     winner = tree[node];
                     tree[node] = tmp;

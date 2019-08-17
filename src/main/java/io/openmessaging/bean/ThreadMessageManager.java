@@ -14,27 +14,23 @@ import java.util.List;
  */
 public class ThreadMessageManager {
 
-    private final static List<ThreadMessage> TM = new ArrayList<>();
+    private final List<ThreadMessage> TM = new ArrayList<>();
 
-    private final static Ring<Message> DUMP_MESSAGES = new Ring<>(new Message[Const.MAX_DUMP_SIZE]);
+    private final Ring<Message> DUMP_MESSAGES = new Ring<>(new Message[Const.MAX_DUMP_SIZE]);
 
-    public static void register(ThreadMessage threadMessage) {
+    public void register(ThreadMessage threadMessage) {
         synchronized (TM) {
             TM.add(threadMessage);
         }
     }
 
-    private static StreamLoserTree<ThreadMessage, Message> streamLoserTree;
+    private StreamLoserTree<ThreadMessage, Message> streamLoserTree;
 
-    public static void initDump() {
+    public void init() {
         streamLoserTree = new StreamLoserTree<>(TM);
     }
 
-    public static void finishDump() {
-        streamLoserTree.setEnd(true);
-    }
-
-    public static Ring<Message> dumpStoreMsg() {
+    public Ring<Message> dumpStoreMsg() {
         while (!DUMP_MESSAGES.isFull()) {
             Message message = streamLoserTree.askWinner();
             if (message == null) {

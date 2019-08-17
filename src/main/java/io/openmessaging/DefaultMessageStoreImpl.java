@@ -1,6 +1,7 @@
 package io.openmessaging;
 
 import io.openmessaging.bean.ThreadMessage;
+import io.openmessaging.bean.ThreadMessageManager;
 import io.openmessaging.common.BoolLock;
 import io.openmessaging.index.DichotomicIndex;
 import io.openmessaging.store.MsgReader;
@@ -18,11 +19,15 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     private BoolLock readInit = new BoolLock();
 
-    private ThreadLocal<ThreadMessage> messages = ThreadLocal.withInitial(ThreadMessage::new);
+    private ThreadMessageManager threadMessageManager = new ThreadMessageManager();
+
+    private ThreadLocal<ThreadMessage> messages = ThreadLocal.withInitial(
+            () -> new ThreadMessage(threadMessageManager)
+    );
 
     private DichotomicIndex index = new DichotomicIndex();
 
-    private MsgWriter msgWriter = new MsgWriter(index);
+    private MsgWriter msgWriter = new MsgWriter(index, threadMessageManager);
 
     private volatile MsgReader msgReader;
 
