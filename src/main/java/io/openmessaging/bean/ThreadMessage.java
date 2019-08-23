@@ -21,13 +21,7 @@ public class ThreadMessage implements StreamTreeNode<ThreadMessage, Message> {
         threadMessageManager.register(this);
     }
 
-    private long lastT = 0;
-
     public void put(Message message) {
-        if (message.getT() < lastT) {
-            System.out.println("t disorder. last:" + lastT + ", current:" + message.getT() + " in " + Thread.currentThread().getName());
-        }
-        lastT = message.getT();
         if (minMessage == null) {
             minMessage = message;
         } else {

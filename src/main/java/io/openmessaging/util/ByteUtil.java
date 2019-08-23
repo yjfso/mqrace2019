@@ -43,4 +43,11 @@ public class ByteUtil {
                 (((long) b[off]) << 56);
     }
 
+    public static int unsignedByte(byte v) {
+        if (v >= 0) {
+            return v;
+        }
+        return ((int)v) & 0xFF;
+    }
+
 }

@@ -2,11 +2,14 @@ package io.openmessaging.store;
 
 import io.openmessaging.Message;
 import io.openmessaging.common.Const;
-import io.openmessaging.index.DichotomicIndex;
+import io.openmessaging.index.TIndex;
 import io.openmessaging.util.ByteUtil;
+import io.openmessaging.util.DichotomicUtil;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+
+import static io.openmessaging.common.Const.T_INTERVAL_BIT;
 
 /**
  * @author yinjianfeng
@@ -18,65 +21,106 @@ public class MsgReader {
 
     private Vfs.VfsEnum bodyFile = Vfs.VfsEnum.body;
 
-    private DichotomicIndex index;
+    private TIndex index;
 
-    public MsgReader(DichotomicIndex index){
+    public MsgReader(TIndex index){
         this.index = index;
     }
 
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        long minNo = index.getLeft(tMin);
-        long maxNo = index.getRight(tMax);
+        long pile = tMin >> T_INTERVAL_BIT;
+        int remainder = (int) (tMin - (pile << T_INTERVAL_BIT));
+        int startPile = (int) (pile - index.startPile);
+        int pointer;
+        if (startPile < 0) {
+            startPile = 0;
+            pointer = 0;
+        } else {
+            pointer = DichotomicUtil.findRight(index.segments.get(startPile), remainder);
+        }
+        int minNo = index.pileIndexes.get(startPile) + pointer;
 
-        byte[] result = atFile.read(minNo << 4, (int)(maxNo - minNo) << 4);
-        List<Integer> nos = new ArrayList<>();
-        List<Message> messages = new ArrayList<>();
-        for (int i = 0; i < result.length; i += 16) {
+        pile = tMax >> T_INTERVAL_BIT;
+        remainder = (int) (tMax - (pile << T_INTERVAL_BIT));
+        int endPile = (int) (pile - index.startPile);
+        int endPointer;
+        if (endPile >= index.pileIndexes.getPos()) {
+            endPile = index.pileIndexes.getPos() - 1;
+            endPointer = index.segments.get(endPile).length - 1;
+        } else  {
+            endPointer = DichotomicUtil.findLeft(index.segments.get(endPile), remainder);
+        }
+        int maxNo = index.pileIndexes.get(endPile) + endPointer;
 
-            long t = ByteUtil.bytes2long(result, i + 8);
-            if (t > tMax) {
-                break;
+        int length = 1 + maxNo - minNo;
+        if (length < 0) {
+            System.out.println(length);
+        }
+        byte[] as = atFile.read(minNo << 3,  length << 3);
+        byte[] bodies = bodyFile.read(minNo * Const.BODY_SIZE,  length * Const.BODY_SIZE);
+        List<Message> messages = new LinkedList<>();
+        byte[] tmp = index.segments.get(startPile);
+        Message lastMsg = null;
+        for (int i = 0; i < length; i ++) {
+            if (tmp.length == pointer) {
+                pointer = 0;
+                do {
+                    tmp = index.segments.get(startPile ++);
+                } while (tmp == null);
             }
-            if (t < tMin) {
-                continue;
-            }
-            long a = ByteUtil.bytes2long(result, i);
+            long a = ByteUtil.bytes2long(as, i << 3);
             if (a < aMin || a > aMax) {
+                pointer ++;
                 continue;
             }
-            Message message = new Message(a, t, null);
-            messages.add(message);
-            nos.add(i >> 4);
-        }
-        byte[] bodies = bodyFile.read(minNo * Const.BODY_SIZE, (int) (maxNo - minNo) * Const.BODY_SIZE);
-        for (int i = 0; i < messages.size(); i++) {
             byte[] body = new byte[Const.BODY_SIZE];
-            System.arraycopy(bodies, nos.get(i) * Const.BODY_SIZE, body, 0,Const.BODY_SIZE);
-            messages.get(i).setBody(body);
-
+            System.arraycopy(bodies, i * Const.BODY_SIZE, body, 0, Const.BODY_SIZE);
+            Message message = new Message(
+                    a,
+                    ((startPile + index.startPile) << T_INTERVAL_BIT) + ByteUtil.unsignedByte(tmp[pointer ++]),
+                    body);
+            lastMsg = message;
+            messages.add(message);
         }
-
         return messages;
     }
 
     public long getAvg(long aMin, long aMax, long tMin, long tMax) {
-        long minNo = index.getLeft(tMin);
-        long maxNo = index.getRight(tMax);
+        long pile = tMin >> T_INTERVAL_BIT;
+        int remainder = (int) (tMin - (pile << T_INTERVAL_BIT));
+        int startPile = (int) (pile - index.startPile);
+        int pointer;
+        if (startPile < 0) {
+            startPile = 0;
+            pointer = 0;
+        } else {
+            pointer = DichotomicUtil.findRight(index.segments.get(startPile), remainder);
+        }
+        int minNo = index.pileIndexes.get(startPile) + pointer;
 
-        byte[] result = atFile.read(minNo << 4, (int)(maxNo - minNo) << 4);
+        pile = tMax >> T_INTERVAL_BIT;
+        remainder = (int) (tMax - (pile << T_INTERVAL_BIT));
+        int endPile = (int) (pile - index.startPile);
+        int endPointer;
+        if (endPile >= index.pileIndexes.getPos()) {
+            endPile = index.pileIndexes.getPos() - 1;
+            endPointer = index.segments.get(endPile).length - 1;
+        } else  {
+            endPointer = DichotomicUtil.findLeft(index.segments.get(endPile), remainder);
+        }
+        int maxNo = index.pileIndexes.get(endPile) + endPointer;
+
         long ta = 0;
         int j = 0;
-        for (int i = 0; i < result.length; i += 16) {
-
-            long t = ByteUtil.bytes2long(result, i + 8);
-            if (t > tMax) {
-                break;
-            }
-            if (t < tMin) {
-                continue;
-            }
-            long a = ByteUtil.bytes2long(result, i);
+        int length = 1 + maxNo - minNo;
+        if (length < 0) {
+            System.out.println(length);
+        }
+        byte[] as = atFile.read(minNo << 3,  length << 3);
+        for (int i = 0; i < length; i ++) {
+            long a = ByteUtil.bytes2long(as, i << 3);
             if (a < aMin || a > aMax) {
+                pointer ++;
                 continue;
             }
             ta += a;

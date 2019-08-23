@@ -44,14 +44,15 @@ public class DichotomicIndex {
 
     private int size;
 
+    private TIndex TIndex = new TIndex();
+
     /**
      *
      * @param t t
-     * @param no 所在序列
      */
-    public void put(long t, int no) {
+    public void put(long t) {
+        TIndex.put(t);
         tMeta.putLong(t);
-        noMeta.putInt(no);
         size ++;
     }
 

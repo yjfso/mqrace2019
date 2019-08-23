@@ -3,7 +3,7 @@ package io.openmessaging;
 import io.openmessaging.bean.ThreadMessage;
 import io.openmessaging.bean.ThreadMessageManager;
 import io.openmessaging.common.BoolLock;
-import io.openmessaging.index.DichotomicIndex;
+import io.openmessaging.index.TIndex;
 import io.openmessaging.store.MsgReader;
 import io.openmessaging.store.MsgWriter;
 
@@ -25,7 +25,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             () -> new ThreadMessage(threadMessageManager)
     );
 
-    private DichotomicIndex index = new DichotomicIndex();
+    private TIndex index = new TIndex();
 
     private MsgWriter msgWriter = new MsgWriter(index, threadMessageManager);
 

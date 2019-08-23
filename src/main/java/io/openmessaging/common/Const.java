@@ -20,4 +20,6 @@ public class Const {
 
     public final static int MAX_PUT_SIZE = 1024 * 1024;
 
+    public final static int T_INTERVAL_BIT = 8;
+
 }

@@ -2,8 +2,7 @@ package io.openmessaging.store;
 
 import io.openmessaging.Message;
 import io.openmessaging.bean.ThreadMessageManager;
-import io.openmessaging.common.Const;
-import io.openmessaging.index.DichotomicIndex;
+import io.openmessaging.index.TIndex;
 import io.openmessaging.util.Ring;
 
 import java.nio.ByteBuffer;
@@ -24,13 +23,11 @@ public class MsgWriter {
 
     private int msgNum = 0;
 
-    private long lastT;
-
-    private DichotomicIndex index;
+    private TIndex index;
 
     private ThreadMessageManager threadMessageManager;
 
-    public MsgWriter(DichotomicIndex index, ThreadMessageManager threadMessageManager){
+    public MsgWriter(TIndex index, ThreadMessageManager threadMessageManager){
         this.index = index;
         this.threadMessageManager = threadMessageManager;
     }
@@ -39,21 +36,11 @@ public class MsgWriter {
         if (messages.isEmpty()) {
             return;
         }
-        boolean needIndex = false;
         Message message;
         while ((message = messages.pop()) != null) {
-            if (lastT != message.getT()) {
-                if (needIndex || (msgNum & Const.INDEX_INTERVAL) == 0) {
-                    index.put(message.getT(), msgNum);
-                    needIndex = false;
-                }
-            } else if((msgNum & Const.INDEX_INTERVAL) == 0) {
-                needIndex = true;
-            }
-            lastT = message.getT();
+            index.put(message.getT());
             try {
                 atBuffer.putLong(message.getA());
-                atBuffer.putLong(message.getT());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -95,8 +82,6 @@ public class MsgWriter {
             try {
                 Message last = write();
                 System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum);
-                index.put(last.getT(), msgNum);
-                index.dumpInfo();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -113,6 +98,7 @@ public class MsgWriter {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        index.writeDone();
         System.out.println("=====write done======");
         atBuffer = null;
         bodyBuffer = null;

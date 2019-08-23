@@ -116,7 +116,20 @@ public class Vfs {
 
     private byte[] read(long offset, int size) {
         try {
-            byte[] result = new byte[size];
+            byte[] result = null;
+            while (result == null) {
+                try {
+                    result = new byte[size];
+                } catch (OutOfMemoryError e) {
+                    try {
+                        System.out.println("outOfMemory in VFS.read");
+                        Thread.sleep(3);
+                    } catch (InterruptedException e1) {
+                        //
+                    }
+                }
+            }
+
             int startNo = (int)(offset >> FILE_SIZE);
             int endNo = (int)((offset + size) >> FILE_SIZE);
             int realOffset = (int)(offset - ((long) startNo << FILE_SIZE));

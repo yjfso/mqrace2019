@@ -38,10 +38,6 @@ public class ThreadMessageManager {
             if (message == null) {
                 break;
             }
-            if (message.getT() < lastT) {
-                System.out.println("=============error=============");
-                System.out.println(message.getT() + "<" + lastT);
-            }
             lastT = message.getT();
             DUMP_MESSAGES.add(message);
         }
