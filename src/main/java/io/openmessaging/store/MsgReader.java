@@ -28,7 +28,8 @@ public class MsgReader {
     }
 
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        int startPile, minNo, pointer, length;
+        int startPile, pointer, length;
+        long minNo;
         StringBuffer stringBuffer = new StringBuffer(String.valueOf(tMin)).append(",").append(String.valueOf(tMax));
 
         {
@@ -57,7 +58,7 @@ public class MsgReader {
             } else  {
                 endPointer = DichotomicUtil.findLeft(index.segments.get(endPile), (int) (tMax - (pile << T_INTERVAL_BIT)));
             }
-            length = 1 + index.pileIndexes.get(endPile) + endPointer - minNo;
+            length = 1 + index.pileIndexes.get(endPile) + endPointer - (int)minNo;
         }
         stringBuffer.append("minNo:").append(minNo).append(",").append("startPile")
                 .append(startPile).append("pointer:").append(pointer)

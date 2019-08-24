@@ -16,7 +16,7 @@ public class TIndex {
 
     public final DynamicIntArray pileIndexes = new DynamicIntArray(4000000, 1000);
 
-    private DynamicByteArray tmpByteArray = new DynamicByteArray(512, 10);
+    private DynamicByteArray tmpByteArray = new DynamicByteArray(6000, 100);
 
     public long startPile;
 
