@@ -41,7 +41,7 @@ public class MsgReader {
                 startPile = 0;
                 pointer = 0;
             } else {
-                pointer = DichotomicUtil.findRight(index.segments.get(startPile), (int) (tMin - (pile << T_INTERVAL_BIT)));
+                pointer = DichotomicUtil.findGte(index.segments.get(startPile), (int) (tMin - (pile << T_INTERVAL_BIT)));
             }
             minNo = index.pileIndexes.get(startPile) + pointer;
         }
@@ -56,7 +56,7 @@ public class MsgReader {
                 endPile = index.pileIndexes.getPos() - 1;
                 endPointer = index.segments.get(endPile).length - 1;
             } else  {
-                endPointer = DichotomicUtil.findLeft(index.segments.get(endPile), (int) (tMax - (pile << T_INTERVAL_BIT)));
+                endPointer = DichotomicUtil.findLte(index.segments.get(endPile), (int) (tMax - (pile << T_INTERVAL_BIT)));
             }
             length = 1 + index.pileIndexes.get(endPile) + endPointer - (int)minNo;
         }
@@ -118,7 +118,7 @@ public class MsgReader {
                 startPile = 0;
                 pointer = 0;
             } else {
-                pointer = DichotomicUtil.findRight(index.segments.get(startPile), (int) (tMin - (pile << T_INTERVAL_BIT)));
+                pointer = DichotomicUtil.findGte(index.segments.get(startPile), (int) (tMin - (pile << T_INTERVAL_BIT)));
             }
             minNo = index.pileIndexes.get(startPile) + pointer;
         }
@@ -133,7 +133,7 @@ public class MsgReader {
                 endPile = index.pileIndexes.getPos() - 1;
                 endPointer = index.segments.get(endPile).length - 1;
             } else  {
-                endPointer = DichotomicUtil.findLeft(index.segments.get(endPile), (int) (tMax - (pile << T_INTERVAL_BIT)));
+                endPointer = DichotomicUtil.findLte(index.segments.get(endPile), (int) (tMax - (pile << T_INTERVAL_BIT)));
             }
             length = 1 + index.pileIndexes.get(endPile) + endPointer - (int)minNo;
         }

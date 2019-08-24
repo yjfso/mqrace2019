@@ -6,15 +6,20 @@ package io.openmessaging.util;
  */
 public class DichotomicUtil {
 
-    public static int findLeft(byte[] data, int dst) {
+    public static int findLte(byte[] data, int dst) {
         int left = 0;
         int right = data.length - 1;
         if (dst >= ByteUtil.unsignedByte(data[right])) {
             return right;
         }
-        int best = left;
+        int best;
         while (true) {
             if (right - left < 2) {
+                if (ByteUtil.unsignedByte(data[right]) >= dst) {
+                    best = left;
+                } else {
+                    best = right;
+                }
                 break;
             }
             int half = left + ((right - left) >> 1);
@@ -26,7 +31,6 @@ public class DichotomicUtil {
             if (actVal > dst) {
                 right = half;
             } else {
-                best = left;
                 left = half;
             }
         }
@@ -38,12 +42,17 @@ public class DichotomicUtil {
         return best;
     }
 
-    public static int findRight(byte[] data, int dst) {
+    public static int findGte(byte[] data, int dst) {
         int left = 0;
         int right = data.length - 1;
-        int best = right;
+        int best;
         while (true) {
             if (right - left < 2) {
+                if (ByteUtil.unsignedByte(data[left]) >= dst) {
+                    best = left;
+                } else {
+                    best = right;
+                }
                 break;
             }
             int half = left + ((right - left) >> 1);
@@ -53,7 +62,6 @@ public class DichotomicUtil {
                 break;
             }
             if (actVal > dst) {
-                best = right;
                 right = half;
             } else {
                 left = half;
