@@ -53,20 +53,21 @@ public class MsgReader {
         int maxNo = index.pileIndexes.get(endPile) + endPointer;
 
         int length = 1 + maxNo - minNo;
-        if (length < 0) {
-            System.out.println(length);
-        }
         byte[] as = atFile.read(minNo << 3,  length << 3);
         byte[] bodies = bodyFile.read(minNo * Const.BODY_SIZE,  length * Const.BODY_SIZE);
         List<Message> messages = new LinkedList<>();
         byte[] tmp = index.segments.get(startPile);
-        Message lastMsg = null;
+        StringBuffer stringBuffer = new StringBuffer(String.valueOf(tMin)).append(",").append(String.valueOf(tMax))
+                .append(",").append(length);
         for (int i = 0; i < length; i ++) {
             if (tmp.length == pointer) {
                 pointer = 0;
                 do {
                     tmp = index.segments.get(startPile ++);
                 } while (tmp == null);
+            }
+            if (i == 0 || i == length-1) {
+                stringBuffer.append(",").append(((startPile + index.startPile) << T_INTERVAL_BIT) + ByteUtil.unsignedByte(tmp[pointer]));
             }
             long a = ByteUtil.bytes2long(as, i << 3);
             if (a < aMin || a > aMax) {
@@ -79,9 +80,9 @@ public class MsgReader {
                     a,
                     ((startPile + index.startPile) << T_INTERVAL_BIT) + ByteUtil.unsignedByte(tmp[pointer ++]),
                     body);
-            lastMsg = message;
             messages.add(message);
         }
+        System.out.println(stringBuffer);
         return messages;
     }
 
