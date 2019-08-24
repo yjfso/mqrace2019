@@ -46,7 +46,7 @@ public class MsgWriter {
             }
             bodyBuffer.put(message.getBody());
             if (msgNum++ == 0) {
-                System.out.println("put first t:" + message.getT() + "; a: " + message.getA());
+                System.out.println("put first t:" + message.getT() + "; a: " + message.getA() + " at " + System.currentTimeMillis());
             }
         }
         atBuffer.flip();
@@ -83,7 +83,7 @@ public class MsgWriter {
             }
             try {
                 Message last = write();
-                System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum);
+                System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum + " at " + System.currentTimeMillis());
             } catch (Exception e) {
                 e.printStackTrace();
             }

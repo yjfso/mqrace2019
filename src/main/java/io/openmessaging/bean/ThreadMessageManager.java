@@ -18,8 +18,6 @@ public class ThreadMessageManager {
 
     private final Ring<Message> DUMP_MESSAGES = new Ring<>(new Message[Const.MAX_DUMP_SIZE]);
 
-    private long lastT;
-
     public void register(ThreadMessage threadMessage) {
         synchronized (TM) {
             TM.add(threadMessage);
@@ -38,7 +36,6 @@ public class ThreadMessageManager {
             if (message == null) {
                 break;
             }
-            lastT = message.getT();
             DUMP_MESSAGES.add(message);
         }
         return DUMP_MESSAGES;

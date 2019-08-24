@@ -19,6 +19,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     private BoolLock readInit = new BoolLock();
 
+    private BoolLock readAvgInit = new BoolLock();
+
     private ThreadMessageManager threadMessageManager = new ThreadMessageManager();
 
     private ThreadLocal<ThreadMessage> messages = ThreadLocal.withInitial(
@@ -60,6 +62,9 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     public long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
+        if (readAvgInit.tryLock()) {
+            msgReader.getMessageDone();
+        }
         return msgReader.getAvg(aMin, aMax, tMin, tMax);
     }
 

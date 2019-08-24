@@ -17,6 +17,10 @@ public class DynamicByteArray {
 
     private Integer size;
 
+    private int no = -1;
+
+    private int realPos;
+
     private int pos;
 
     public DynamicByteArray(Integer initSize, Integer size) {
@@ -26,21 +30,22 @@ public class DynamicByteArray {
     }
 
     public void put(byte t) {
-        if (pos == initSize) {
-            buffers = new ArrayList<>();
-            buffers.add(new byte[size]);
-            buffers.get(0)[0] = t;
-        } else if (pos >= initSize) {
-            int no = (pos - initSize) / size;
-            int rPos = (pos - initSize) % size;
-            if (rPos == 0) {
-                buffers.add(new byte[size]);
-            }
-            buffers.get(no)[rPos] = t;
+        byte[] dst;
+        if (no == -1) {
+            dst = buffer;
         } else {
-            buffer[pos] = t;
+            dst = buffers.get(no);
         }
+        dst[realPos++] = t;
         pos ++;
+        if (realPos == dst.length) {
+            realPos = 0;
+            no++;
+            if (no++ == 0) {
+                buffers = new ArrayList<>();
+            }
+            buffers.add(new byte[size]);
+        }
     }
 
     public byte[] dump() {
@@ -61,6 +66,8 @@ public class DynamicByteArray {
 
     public void clear() {
         pos = 0;
+        no = -1;
+        realPos = 0;
     }
 
     public boolean isEmpty() {

@@ -136,14 +136,13 @@ public class Vfs {
             if (startNo == endNo) {
                 ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(result);
             } else {
-                int firstLength = (1 << FILE_SIZE) - realOffset;
-                ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(result, 0, firstLength);
+                int length = (1 << FILE_SIZE) - realOffset;
+                ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(result, 0, length);
                 for (int i = startNo + 1; i < endNo; i++) {
-                    ((MappedByteBuffer)mappedByteBuffer(i).position(0)).get(result,
-                            firstLength + (i - startNo - 1) * (1 << FILE_SIZE), 1 << FILE_SIZE);
+                    ((MappedByteBuffer)mappedByteBuffer(i).position(0)).get(result, length, 1 << FILE_SIZE);
+                    length += (1<<FILE_SIZE);
                 }
-                ((MappedByteBuffer)mappedByteBuffer(endNo).position(0)).get(result,
-                        firstLength + (endNo - startNo - 1) * (1 << FILE_SIZE), size - (endNo - startNo - 1) * (1 << FILE_SIZE) - firstLength);
+                ((MappedByteBuffer)mappedByteBuffer(endNo).position(0)).get(result, length, size - length);
             }
             return result;
         } catch (Exception e) {

@@ -1,15 +1,9 @@
 package io.openmessaging;
 
+import io.openmessaging.common.Const;
 import sun.misc.Unsafe;
 
-import java.io.File;
-import java.io.RandomAccessFile;
 import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author yinjianfeng
@@ -30,7 +24,20 @@ public class AvgTester {
         }
     }
 
+
     public static void main(String[] args) {
+        int z = 255;
+
+        int j = 0;
+        for (int i = 0; i <= 2082511109; i++) {
+            if ((i & Const.INDEX_INTERVAL) == 0) {
+                j ++ ;
+            }
+
+        }
+        System.out.println((1 + Const.MSG_NUM / Const.INDEX_INTERVAL));
+        System.out.println(j);
+        System.out.println("=============");
         System.out.println(5 >> 2 << 2);
         System.out.println(6 >> 2 << 2);
 //        System.out.println(3 >> 1);

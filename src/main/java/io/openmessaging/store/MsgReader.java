@@ -3,6 +3,7 @@ package io.openmessaging.store;
 import io.openmessaging.Message;
 import io.openmessaging.common.Const;
 import io.openmessaging.index.TIndex;
+import io.openmessaging.util.ByteObjectPool;
 import io.openmessaging.util.ByteUtil;
 import io.openmessaging.util.DichotomicUtil;
 
@@ -23,6 +24,8 @@ public class MsgReader {
 
     private TIndex index;
 
+    private ThreadLocal<ByteObjectPool> bodyByte = ThreadLocal.withInitial(ByteObjectPool::new);
+
     public MsgReader(TIndex index){
         this.index = index;
     }
@@ -30,7 +33,6 @@ public class MsgReader {
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         int startPile, pointer, length;
         long minNo;
-        StringBuffer stringBuffer = new StringBuffer(String.valueOf(tMin)).append(",").append(String.valueOf(tMax));
 
         {
             //tMin
@@ -60,12 +62,10 @@ public class MsgReader {
             }
             length = 1 + index.pileIndexes.get(endPile) + endPointer - (int)minNo;
         }
-        stringBuffer.append("minNo:").append(minNo).append(",").append("startPile")
-                .append(startPile).append("pointer:").append(pointer)
-                .append(",length:").append(length);
         byte[] as = atFile.read(minNo << 3,  length << 3);
         byte[] bodies = bodyFile.read(minNo * Const.BODY_SIZE,  length * Const.BODY_SIZE);
         List<Message> messages = new LinkedList<>();
+        ByteObjectPool byteObjectPool = bodyByte.get();
         byte[] tmp = index.segments.get(startPile);
 
         for (int i = 0; i < length; i ++) {
@@ -75,25 +75,13 @@ public class MsgReader {
                     tmp = index.segments.get(++startPile);
                 } while (tmp == null);
             }
-            if (i == 0) {
-                long t = ((startPile + index.startPile) << T_INTERVAL_BIT) + ByteUtil.unsignedByte(tmp[pointer]);
-                if (t != tMin){
-                    stringBuffer.append(":").append(t);
-                }
-            }
-            if (i == length-1) {
-                long t = ((startPile + index.startPile) << T_INTERVAL_BIT) + ByteUtil.unsignedByte(tmp[pointer]);
-                if (t != tMax){
-                    stringBuffer.append(",").append(t);
-                }
-            }
+
             long a = ByteUtil.bytes2long(as, i << 3);
             if (a < aMin || a > aMax) {
-//                stringBuffer.append("[").append(a).append("]");
                 pointer ++;
                 continue;
             }
-            byte[] body = new byte[Const.BODY_SIZE];
+            byte[] body = byteObjectPool.borrowObject();
             System.arraycopy(bodies, i * Const.BODY_SIZE, body, 0, Const.BODY_SIZE);
             Message message = new Message(
                     a,
@@ -101,8 +89,12 @@ public class MsgReader {
                     body);
             messages.add(message);
         }
-        System.out.println(stringBuffer);
+        byteObjectPool.returnAll();
         return messages;
+    }
+
+    public void getMessageDone() {
+        bodyFile = null;
     }
 
     public long getAvg(long aMin, long aMax, long tMin, long tMax) {
