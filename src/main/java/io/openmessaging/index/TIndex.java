@@ -24,6 +24,8 @@ public class TIndex {
 
     private int pos = 0;
 
+    private int maxSegmentLength = 0;
+
     public void put(long num) {
         long pile = num >> T_INTERVAL_BIT;
         if (pos == 0) {
@@ -39,10 +41,15 @@ public class TIndex {
             }
             if (!tmpByteArray.isEmpty()) {
                 byte[] bytes = tmpByteArray.dump();
+                if (maxSegmentLength < bytes.length) {
+                    maxSegmentLength = bytes.length;
+                }
 //                ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bytes.length);
 //                byteBuffer.put(bytes);
                 segments.put(bytes);
                 tmpByteArray.clear();
+            } else {
+                segments.put(null);
             }
             pileIndexes.put(pos);
             lastPile = pile;
@@ -55,6 +62,7 @@ public class TIndex {
         byte[] bytes = tmpByteArray.dump();
         segments.put(bytes);
         tmpByteArray = null;
+        System.out.println("maxSegmentLength:" + maxSegmentLength);
     }
 
 }

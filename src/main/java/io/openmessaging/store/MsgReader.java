@@ -29,6 +29,8 @@ public class MsgReader {
 
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         int startPile, minNo, pointer, length;
+        StringBuffer stringBuffer = new StringBuffer(String.valueOf(tMin)).append(",").append(String.valueOf(tMax));
+
         {
             //tMin
             long pile = tMin >> T_INTERVAL_BIT;
@@ -57,13 +59,14 @@ public class MsgReader {
             }
             length = 1 + index.pileIndexes.get(endPile) + endPointer - minNo;
         }
-
+        stringBuffer.append("minNo:").append(minNo).append(",").append("startPile")
+                .append(startPile).append("pointer:").append(pointer)
+                .append(",length:").append(length);
         byte[] as = atFile.read(minNo << 3,  length << 3);
         byte[] bodies = bodyFile.read(minNo * Const.BODY_SIZE,  length * Const.BODY_SIZE);
         List<Message> messages = new LinkedList<>();
         byte[] tmp = index.segments.get(startPile);
-        StringBuffer stringBuffer = new StringBuffer(String.valueOf(tMin)).append(",").append(String.valueOf(tMax))
-                .append(",").append(length);
+
         for (int i = 0; i < length; i ++) {
             if (tmp.length == pointer) {
                 pointer = 0;
@@ -85,7 +88,7 @@ public class MsgReader {
             }
             long a = ByteUtil.bytes2long(as, i << 3);
             if (a < aMin || a > aMax) {
-                stringBuffer.append("[").append(a).append("]");
+//                stringBuffer.append("[").append(a).append("]");
                 pointer ++;
                 continue;
             }
