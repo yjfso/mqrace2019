@@ -72,7 +72,7 @@ public class MsgReader {
             if (tmp.length == pointer) {
                 pointer = 0;
                 do {
-                    tmp = index.segments.get(startPile ++);
+                    tmp = index.segments.get(++startPile);
                 } while (tmp == null);
             }
             if (i == 0) {
@@ -106,37 +106,40 @@ public class MsgReader {
     }
 
     public long getAvg(long aMin, long aMax, long tMin, long tMax) {
-        long pile = tMin >> T_INTERVAL_BIT;
-        int remainder = (int) (tMin - (pile << T_INTERVAL_BIT));
-        int startPile = (int) (pile - index.startPile);
-        int pointer;
-        if (startPile < 0) {
-            startPile = 0;
-            pointer = 0;
-        } else {
-            pointer = DichotomicUtil.findRight(index.segments.get(startPile), remainder);
-        }
-        int minNo = index.pileIndexes.get(startPile) + pointer;
+        int startPile, pointer, length;
+        long minNo;
 
-        pile = tMax >> T_INTERVAL_BIT;
-        remainder = (int) (tMax - (pile << T_INTERVAL_BIT));
-        int endPile = (int) (pile - index.startPile);
-        int endPointer;
-        if (endPile >= index.pileIndexes.getPos()) {
-            endPile = index.pileIndexes.getPos() - 1;
-            endPointer = index.segments.get(endPile).length - 1;
-        } else  {
-            endPointer = DichotomicUtil.findLeft(index.segments.get(endPile), remainder);
+        {
+            //tMin
+            long pile = tMin >> T_INTERVAL_BIT;
+            startPile = (int) (pile - index.startPile);
+            if (startPile <= 0) {
+                //tMin 小于最小值
+                startPile = 0;
+                pointer = 0;
+            } else {
+                pointer = DichotomicUtil.findRight(index.segments.get(startPile), (int) (tMin - (pile << T_INTERVAL_BIT)));
+            }
+            minNo = index.pileIndexes.get(startPile) + pointer;
         }
-        int maxNo = index.pileIndexes.get(endPile) + endPointer;
 
-        long ta = 0;
-        int j = 0;
-        int length = 1 + maxNo - minNo;
-        if (length < 0) {
-            System.out.println(length);
+        {
+            //tMax
+            long pile = tMax >> T_INTERVAL_BIT;
+            int endPile = (int) (pile - index.startPile);
+            int endPointer;
+            if (endPile >= index.pileIndexes.getPos() - 1) {
+                //tMax 大于最大值
+                endPile = index.pileIndexes.getPos() - 1;
+                endPointer = index.segments.get(endPile).length - 1;
+            } else  {
+                endPointer = DichotomicUtil.findLeft(index.segments.get(endPile), (int) (tMax - (pile << T_INTERVAL_BIT)));
+            }
+            length = 1 + index.pileIndexes.get(endPile) + endPointer - (int)minNo;
         }
         byte[] as = atFile.read(minNo << 3,  length << 3);
+        long ta = 0;
+        int j = 0;
         for (int i = 0; i < length; i ++) {
             long a = ByteUtil.bytes2long(as, i << 3);
             if (a < aMin || a > aMax) {
