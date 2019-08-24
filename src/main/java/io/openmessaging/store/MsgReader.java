@@ -32,7 +32,8 @@ public class MsgReader {
         int remainder = (int) (tMin - (pile << T_INTERVAL_BIT));
         int startPile = (int) (pile - index.startPile);
         int pointer;
-        if (startPile < 0) {
+        if (startPile <= 0) {
+            //tMin 小于最小值
             startPile = 0;
             pointer = 0;
         } else {
@@ -44,7 +45,8 @@ public class MsgReader {
         remainder = (int) (tMax - (pile << T_INTERVAL_BIT));
         int endPile = (int) (pile - index.startPile);
         int endPointer;
-        if (endPile >= index.pileIndexes.getPos()) {
+        if (endPile >= index.pileIndexes.getPos() - 1) {
+            //tMax 大于最大值
             endPile = index.pileIndexes.getPos() - 1;
             endPointer = index.segments.get(endPile).length - 1;
         } else  {
@@ -66,8 +68,17 @@ public class MsgReader {
                     tmp = index.segments.get(startPile ++);
                 } while (tmp == null);
             }
-            if (i == 0 || i == length-1) {
-                stringBuffer.append(",").append(((startPile + index.startPile) << T_INTERVAL_BIT) + ByteUtil.unsignedByte(tmp[pointer]));
+            if (i == 0) {
+                long t = ((startPile + index.startPile) << T_INTERVAL_BIT) + ByteUtil.unsignedByte(tmp[pointer]);
+                if (t != tMin){
+                    stringBuffer.append(":").append(t);
+                }
+            }
+            if (i == length-1) {
+                long t = ((startPile + index.startPile) << T_INTERVAL_BIT) + ByteUtil.unsignedByte(tmp[pointer]);
+                if (t != tMax){
+                    stringBuffer.append(",").append(t);
+                }
             }
             long a = ByteUtil.bytes2long(as, i << 3);
             if (a < aMin || a > aMax) {

@@ -45,7 +45,9 @@ public class MsgWriter {
                 e.printStackTrace();
             }
             bodyBuffer.put(message.getBody());
-            msgNum++;
+            if (msgNum++ == 0) {
+                System.out.println("put first t:" + message.getT() + "; a: " + message.getA());
+            }
         }
         atBuffer.flip();
         atFile.write(atBuffer);
