@@ -40,7 +40,7 @@ public class DynamicByteArray {
         pos ++;
         if (realPos == dst.length) {
             realPos = 0;
-            if (no++ == 0) {
+            if (++no == 0) {
                 buffers = new ArrayList<>();
             }
             buffers.add(new byte[size]);

@@ -7,9 +7,20 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -31,8 +42,8 @@ public class Vfs {
             return vfs.read(offset, size);
         }
 
-        public void write(ByteBuffer src) {
-            vfs.write(src);
+        public void write(ByteBuffer src, Consumer<ByteBuffer> consumer) {
+            vfs.write(src, consumer);
         }
 
     }
@@ -43,16 +54,54 @@ public class Vfs {
 
     private long pos;
 
-    private Map<Integer, FileChannel> channelMap = new HashMap<>();
+    private volatile Map<Integer, Object> channelMap = new HashMap<>();
+
+    private Map<Integer, AsynchronousFileChannel> asyncChannelMap = new HashMap<>();
 
     private ThreadLocal<Map<Integer, MappedByteBuffer>> bufferThreadLocal
             = ThreadLocal.withInitial((Supplier<HashMap<Integer, MappedByteBuffer>>) HashMap::new);
 
-    private FileChannel fileChannel(int no) {
-        FileChannel fileChannel = channelMap.get(no);
+    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+    void makeSureFile(String fileName){
+        File file = new File(fileName);
+        try (RandomAccessFile ra = new RandomAccessFile(file, "rw")){
+            ra.setLength(1 << FILE_SIZE);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private AsynchronousFileChannel asyncFileChannel(int no) {
+        AsynchronousFileChannel fileChannel = (AsynchronousFileChannel) channelMap.get(no);
         if (fileChannel == null) {
             synchronized (vfsEnum) {
-                fileChannel = channelMap.get(no);
+                fileChannel = (AsynchronousFileChannel) channelMap.get(no);
+                if (fileChannel == null) {
+                    String fileName = Const.DATA_PATH + vfsEnum.name() + no;
+                    try {
+                        Path path = Paths.get(fileName);
+                        makeSureFile(fileName);
+                        fileChannel = AsynchronousFileChannel.open(path,
+                                new HashSet<OpenOption>(Collections.singletonList(StandardOpenOption.WRITE)),
+                                executorService);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                    channelMap.put(no, fileChannel);
+                }
+            }
+        }
+        return fileChannel;
+    }
+
+    private FileChannel fileChannel(int no) {
+        System.out.println("size:" + channelMap.size() + " in " + Thread.currentThread().getName());
+        FileChannel fileChannel = (FileChannel) channelMap.get(no);
+        if (fileChannel == null) {
+            synchronized (vfsEnum) {
+                fileChannel = (FileChannel) channelMap.get(no);
                 if (fileChannel == null) {
                     String fileName = Const.DATA_PATH + vfsEnum.name() + no;
                     try {
@@ -92,26 +141,52 @@ public class Vfs {
         this.vfsEnum = vfsEnum;
     }
 
-    private void write(ByteBuffer src) {
+    private void write(ByteBuffer src, Consumer<ByteBuffer> consumer) {
+        CompletionHandler handler = new CompletionHandler<Integer, Object>(){
+
+            @Override
+            public void completed(Integer result, Object attachment) {
+                consumer.accept(src);
+            }
+
+            @Override
+            public void failed(Throwable exc, Object attachment) {
+                consumer.accept(src);
+                exc.printStackTrace();
+            }
+        };
+
         try {
             int size = src.limit();
             int startNo = (int) (pos >> FILE_SIZE);
             int endNo = (int) ((pos + size) >> FILE_SIZE);
             if (startNo == endNo) {
-                fileChannel(startNo).write(src);
+                asyncFileChannel(startNo).write(src, pos, null, handler);
             } else {
                 int realOffset = (int) (pos - (startNo << FILE_SIZE));
                 int firstLength = (1 << FILE_SIZE) - realOffset;
                 src.limit(firstLength);
-                fileChannel(startNo).write(src);
+                asyncFileChannel(startNo).write(src.slice(), pos);
+                src.position(firstLength);
                 src.limit(size);
-                fileChannel(endNo).write(src);
+                asyncFileChannel(endNo).write(src, pos, null, handler);
             }
             pos += size;
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    public void writeDone() {
+        for (Object value : channelMap.values()) {
+            try {
+                ((AsynchronousFileChannel) value).close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        channelMap.clear();
     }
 
     private byte[] read(long offset, int size) {

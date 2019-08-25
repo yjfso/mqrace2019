@@ -2,6 +2,7 @@ package io.openmessaging.store;
 
 import io.openmessaging.Message;
 import io.openmessaging.bean.ThreadMessageManager;
+import io.openmessaging.common.Const;
 import io.openmessaging.index.TIndex;
 import io.openmessaging.util.Ring;
 
@@ -17,9 +18,11 @@ public class MsgWriter {
 
     private Vfs.VfsEnum atFile = Vfs.VfsEnum.at;
 
-    private ByteBuffer atBuffer = ByteBuffer.allocateDirect(1024 * 1024 * 500);
+    private Ring<ByteBuffer> aBufferRing = new Ring<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
+            .fill(() -> ByteBuffer.allocate(8 * Const.MAX_DUMP_SIZE));
 
-    private ByteBuffer bodyBuffer = ByteBuffer.allocateDirect(1024 * 1024 * 1024);
+    private Ring<ByteBuffer> bodyBufferRing = new Ring<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
+            .fill(() -> ByteBuffer.allocate(Const.BODY_SIZE * Const.MAX_DUMP_SIZE));
 
     private int msgNum = 0;
 
@@ -37,22 +40,45 @@ public class MsgWriter {
             return;
         }
         Message message;
+        ByteBuffer atBuffer = aBufferRing.popWait();
+        atBuffer.clear();
+        ByteBuffer bodyBuffer = bodyBufferRing.popWait();
+        bodyBuffer.clear();
+        if (bodyBuffer.position() != 0) {
+            System.out.println("!=0");
+            System.exit(0);
+        }
+        int i = 0;
         while ((message = messages.pop()) != null) {
             index.put(message.getT());
             try {
                 atBuffer.putLong(message.getA());
+                i ++;
+
+                int limit = bodyBuffer.limit();
+                int pos = bodyBuffer.position();
+                int su = limit - pos;
+                if (su < 34) {
+                    System.out.println(aBufferRing.getReadIndex() + "|" + i + "|" +limit + "|" + pos + "====" + su + "|" + bodyBuffer.limit() + bodyBuffer.position());
+                    System.exit(0);
+                }
+                bodyBuffer.put(message.getBody());
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            bodyBuffer.put(message.getBody());
+
             if (msgNum++ == 0) {
                 System.out.println("put first t:" + message.getT() + "; a: " + message.getA() + " at " + System.currentTimeMillis());
             }
         }
         atBuffer.flip();
-        atFile.write(atBuffer);
+        atFile.write(atBuffer, e -> {
+            aBufferRing.add1(e);
+        });
         bodyBuffer.flip();
-        bodyFile.write(bodyBuffer);
+        bodyFile.write(bodyBuffer, e -> {
+            bodyBufferRing.add1(e);
+        });
         atBuffer.clear();
         bodyBuffer.clear();
     }
@@ -88,7 +114,7 @@ public class MsgWriter {
                 e.printStackTrace();
             }
         }, "writer...");
-//        thread.setPriority(MAX_PRIORITY);
+        thread.setPriority(Thread.MAX_PRIORITY);
         thread.start();
     }
 
@@ -102,8 +128,18 @@ public class MsgWriter {
         }
         index.writeDone();
         System.out.println("=====write done======");
-        atBuffer = null;
-        bodyBuffer = null;
+        while (!aBufferRing.isFull()) {
+            try {
+                Thread.sleep(1);
+                System.out.println("wait for write done...");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Vfs.VfsEnum.at.vfs.writeDone();
+        Vfs.VfsEnum.body.vfs.writeDone();
+        aBufferRing = null;
+        bodyBufferRing = null;
     }
 
 }
