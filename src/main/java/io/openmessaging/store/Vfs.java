@@ -89,7 +89,8 @@ public class Vfs {
     private FileChannel fileChannel() {
         String fileName = Const.DATA_PATH + vfsEnum.name();
         try {
-            return FileChannel.open(Paths.get(fileName), StandardOpenOption.WRITE, StandardOpenOption.READ);
+//            return FileChannel.open(Paths.get(fileName), StandardOpenOption.WRITE, StandardOpenOption.READ);
+            return FileChannel.open(Paths.get(fileName));
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -104,9 +105,7 @@ public class Vfs {
 //                if (buffer == null) {
                     try {
                         long startPos = ((long)no) << FILE_SIZE;
-                        long size = Math.min(1 << FILE_SIZE, writePos - startPos);
-                        System.out.println("map:" + startPos + "|" + size);
-                        buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, startPos, size);
+                        buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, startPos, Math.min(1 << FILE_SIZE, writePos - startPos));
                     } catch (IOException e) {
                         e.printStackTrace();
                         throw new RuntimeException(e);
