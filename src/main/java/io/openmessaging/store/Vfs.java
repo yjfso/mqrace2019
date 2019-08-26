@@ -142,7 +142,7 @@ public class Vfs {
     }
 
     private void write(ByteBuffer src, Consumer<ByteBuffer> consumer) {
-        CompletionHandler handler = new CompletionHandler<Integer, Object>(){
+        CompletionHandler<Integer, Object> handler = new CompletionHandler<Integer, Object>(){
 
             @Override
             public void completed(Integer result, Object attachment) {

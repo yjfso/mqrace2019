@@ -33,7 +33,7 @@ public class MsgReader {
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         int startPile, pointer, length;
         long minNo;
-
+        StringBuffer stringBuffer = new StringBuffer();
         {
             //tMin
             long pile = tMin >> T_INTERVAL_BIT;
@@ -68,6 +68,8 @@ public class MsgReader {
         ByteObjectPool byteObjectPool = bodyByte.get();
         byte[] tmp = index.segments.get(startPile);
 
+        stringBuffer.append("length:").append(length).append(";tMin:").append(tMin).append(";startPile:").append(startPile);
+        System.out.println(stringBuffer);
         for (int i = 0; i < length; i ++) {
             if (tmp.length == pointer) {
                 pointer = 0;
