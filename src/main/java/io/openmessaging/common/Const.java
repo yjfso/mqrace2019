@@ -14,7 +14,7 @@ public class Const {
 
     public final static int BODY_SIZE = 34;
 
-    public final static int WRITE_ASYNC_NUM = 300;
+    public final static int WRITE_ASYNC_NUM = 400;
 
     public final static int MAX_DUMP_SIZE = 16 * 1024;
 

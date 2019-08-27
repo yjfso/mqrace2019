@@ -29,7 +29,7 @@ import java.util.function.Supplier;
  */
 public class Vfs {
 
-    enum VfsEnum {
+    public enum VfsEnum {
         //
         body,
 
@@ -89,7 +89,7 @@ public class Vfs {
     private FileChannel fileChannel() {
         String fileName = Const.DATA_PATH + vfsEnum.name();
         try {
-            return FileChannel.open(Paths.get(fileName));
+            return FileChannel.open(Paths.get(fileName), StandardOpenOption.WRITE, StandardOpenOption.READ);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -104,7 +104,9 @@ public class Vfs {
 //                if (buffer == null) {
                     try {
                         long startPos = ((long)no) << FILE_SIZE;
-                        buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, startPos, Math.min(1 << FILE_SIZE, writePos - startPos));
+                        long size = Math.min(1 << FILE_SIZE, writePos - startPos);
+                        System.out.println("map:" + startPos + "|" + size);
+                        buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, startPos, size);
                     } catch (IOException e) {
                         e.printStackTrace();
                         throw new RuntimeException(e);
@@ -142,23 +144,6 @@ public class Vfs {
             final int size = src.limit();
             asyncFileChannel.write(src, writePos, null, handler);
             writePos += size;
-//            int size = src.limit();
-//            int surplus = (1 << FILE_SIZE) - size - writePos;
-//            if (surplus == 0) {
-//                asyncFileChannel(writeNo).write(src, writePos, null, handler);
-//                writeNo ++;
-//                writePos = 0;
-//            } else if (surplus > 0) {
-//                asyncFileChannel(writeNo).write(src, writePos, null, handler);
-//                writePos += size;
-//            } else {
-//                src.limit((1 << FILE_SIZE) - writePos);
-//                asyncFileChannel(writeNo++).write(src.slice(), writePos);
-//                src.position(src.limit());
-//                src.limit(size);
-//                asyncFileChannel(writeNo).write(src, 0, null, handler);
-//                writePos -= surplus;
-//            }
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -209,7 +194,47 @@ public class Vfs {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-
     }
 
+    private byte[] readByfileChannel(long offset, int size) {
+        try {
+            byte[] result = null;
+            while (result == null) {
+                try {
+                    result = new byte[size];
+                } catch (OutOfMemoryError e) {
+                    try {
+                        System.out.println("outOfMemory in VFS.read");
+                        Thread.sleep(3);
+                    } catch (InterruptedException e1) {
+                        //
+                    }
+                }
+            }
+
+            int startNo = (int)(offset >> FILE_SIZE);
+            int endNo = (int)((offset + size) >> FILE_SIZE);
+            int realOffset = (int)(offset - ((long) startNo << FILE_SIZE));
+            if (startNo == endNo) {
+                ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(result);
+            } else {
+                int length = (1 << FILE_SIZE) - realOffset;
+                ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(result, 0, length);
+                for (int i = startNo + 1; i < endNo; i++) {
+                    ((MappedByteBuffer)mappedByteBuffer(i).position(0)).get(result, length, 1 << FILE_SIZE);
+                    length += (1<<FILE_SIZE);
+                }
+                ((MappedByteBuffer)mappedByteBuffer(endNo).position(0)).get(result, length, size - length);
+            }
+            return result;
+        } catch (Exception e) {
+            System.out.println("read offset:" + offset + "size:" + size + "catch error");
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void setWritePos(long writePos) {
+        this.writePos = writePos;
+    }
 }

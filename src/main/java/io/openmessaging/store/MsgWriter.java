@@ -19,14 +19,16 @@ public class MsgWriter {
     private Vfs.VfsEnum atFile = Vfs.VfsEnum.at;
 
     private Ring<ByteBuffer> aBufferRing = new Ring<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
-            .fill(() -> ByteBuffer.allocate(8 * Const.MAX_DUMP_SIZE));
+            .fill(() -> DirectBuffer.ask(8 * Const.MAX_DUMP_SIZE));
 
     private Ring<ByteBuffer> bodyBufferRing = new Ring<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
-            .fill(() -> ByteBuffer.allocate(Const.BODY_SIZE * Const.MAX_DUMP_SIZE));
+            .fill(() -> DirectBuffer.ask(Const.BODY_SIZE * Const.MAX_DUMP_SIZE));
 
     private int msgNum = 0;
 
     private TIndex index;
+
+    private long lastT;
 
     private ThreadMessageManager threadMessageManager;
 
@@ -41,27 +43,15 @@ public class MsgWriter {
         }
         Message message;
         ByteBuffer atBuffer = aBufferRing.popWait();
-        atBuffer.clear();
         ByteBuffer bodyBuffer = bodyBufferRing.popWait();
-        bodyBuffer.clear();
-        if (bodyBuffer.position() != 0) {
-            System.out.println("!=0");
-            System.exit(0);
-        }
-        int i = 0;
+
         while ((message = messages.pop()) != null) {
             index.put(message.getT());
             try {
-                atBuffer.putLong(message.getA());
-                i ++;
-
-                int limit = bodyBuffer.limit();
-                int pos = bodyBuffer.position();
-                int su = limit - pos;
-                if (su < 34) {
-                    System.out.println(aBufferRing.getReadIndex() + "|" + i + "|" +limit + "|" + pos + "====" + su + "|" + bodyBuffer.limit() + bodyBuffer.position());
-                    System.exit(0);
+                if (lastT != message.getT()) {
+                    atBuffer.putLong(message.getT());
                 }
+                atBuffer.putLong(message.getA());
                 bodyBuffer.put(message.getBody());
             } catch (Exception e) {
                 e.printStackTrace();
@@ -74,10 +64,12 @@ public class MsgWriter {
         atBuffer.flip();
         atFile.write(atBuffer, e -> {
             aBufferRing.add1(e);
+            e.clear();
         });
         bodyBuffer.flip();
         bodyFile.write(bodyBuffer, e -> {
             bodyBufferRing.add1(e);
+            e.clear();
         });
         atBuffer.clear();
         bodyBuffer.clear();
@@ -140,6 +132,7 @@ public class MsgWriter {
         Vfs.VfsEnum.body.vfs.writeDone();
         aBufferRing = null;
         bodyBufferRing = null;
+        DirectBuffer.returnAll();
     }
 
 }

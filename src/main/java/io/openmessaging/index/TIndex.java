@@ -1,7 +1,5 @@
 package io.openmessaging.index;
 
-import io.openmessaging.util.DynamicArray;
-import io.openmessaging.util.DynamicByteArray;
 import io.openmessaging.util.DynamicIntArray;
 
 import static io.openmessaging.common.Const.T_INTERVAL_BIT;
@@ -12,11 +10,11 @@ import static io.openmessaging.common.Const.T_INTERVAL_BIT;
  */
 public class TIndex {
 
-    public final DynamicArray<byte[]> segments = new DynamicArray<>(4000000, 1000, byte[][]::new);
+//    public final DynamicArray<byte[]> segments = new DynamicArray<>(4000000, 1000, byte[][]::new);
 
     public final DynamicIntArray pileIndexes = new DynamicIntArray(4000000, 1000);
 
-    private DynamicByteArray tmpByteArray = new DynamicByteArray(6000, 100);
+//    private DynamicByteArray tmpByteArray = new DynamicByteArray(6000, 100);
 
     public long startPile;
 
@@ -36,33 +34,31 @@ public class TIndex {
 
         if (pile != lastPile) {
             for (int i = (int)(pile - lastPile - 1); i > 0; i--) {
-                segments.put(null);
+//                segments.put(null);
                 pileIndexes.put(pos);
             }
-            if (!tmpByteArray.isEmpty()) {
-                byte[] bytes = tmpByteArray.dump();
-                if (maxSegmentLength < bytes.length) {
-                    maxSegmentLength = bytes.length;
-                }
-//                ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bytes.length);
-//                byteBuffer.put(bytes);
-                segments.put(bytes);
-                tmpByteArray.clear();
-            } else {
-                segments.put(null);
-            }
+//            if (!tmpByteArray.isEmpty()) {
+//                byte[] bytes = tmpByteArray.dump();
+//                if (maxSegmentLength < bytes.length) {
+//                    maxSegmentLength = bytes.length;
+//                }
+//                segments.put(bytes);
+//                tmpByteArray.clear();
+//            } else {
+//                segments.put(null);
+//            }
             pileIndexes.put(pos);
             lastPile = pile;
         }
         pos ++;
-        tmpByteArray.put((byte)(num - (pile << T_INTERVAL_BIT)));
+//        tmpByteArray.put((byte)(num - (pile << T_INTERVAL_BIT)));
     }
 
     public void writeDone() {
-        byte[] bytes = tmpByteArray.dump();
-        segments.put(bytes);
-        tmpByteArray = null;
-        System.out.println("maxSegmentLength:" + maxSegmentLength);
+//        byte[] bytes = tmpByteArray.dump();
+//        segments.put(bytes);
+//        tmpByteArray = null;
+//        System.out.println("maxSegmentLength:" + maxSegmentLength);
     }
 
 }
