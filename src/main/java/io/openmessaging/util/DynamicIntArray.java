@@ -44,9 +44,6 @@ public class DynamicIntArray {
     }
 
     public int get(int pos) {
-//        if (pos >= this.pos) {
-//            pos = this.pos - 1;
-//        }
         if (pos > initSize) {
             int no = (pos - initSize) / size;
             int rPos = (pos - initSize) % size;

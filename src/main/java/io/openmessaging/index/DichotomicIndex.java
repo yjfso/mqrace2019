@@ -51,7 +51,7 @@ public class DichotomicIndex {
      * @param t t
      */
     public void put(long t) {
-        TIndex.put(t);
+//        TIndex.put(t);
         tMeta.putLong(t);
         size ++;
     }

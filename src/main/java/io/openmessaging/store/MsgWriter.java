@@ -24,11 +24,7 @@ public class MsgWriter {
     private Ring<ByteBuffer> bodyBufferRing = new Ring<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
             .fill(() -> DirectBuffer.ask(Const.BODY_SIZE * Const.MAX_DUMP_SIZE));
 
-    private int msgNum = 0;
-
     private TIndex index;
-
-    private long lastT;
 
     private ThreadMessageManager threadMessageManager;
 
@@ -48,18 +44,12 @@ public class MsgWriter {
         while ((message = messages.pop()) != null) {
             index.put(message.getT());
             try {
-                if (lastT != message.getT()) {
-                    atBuffer.putLong(message.getT());
-                }
                 atBuffer.putLong(message.getA());
                 bodyBuffer.put(message.getBody());
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            if (msgNum++ == 0) {
-                System.out.println("put first t:" + message.getT() + "; a: " + message.getA() + " at " + System.currentTimeMillis());
-            }
         }
         atBuffer.flip();
         atFile.write(atBuffer, e -> {
@@ -91,7 +81,6 @@ public class MsgWriter {
         return last;
     }
 
-    @SuppressWarnings("AlibabaAvoidManuallyCreateThread")
     public void start() {
         thread = new Thread(() -> {
             try {
@@ -101,7 +90,8 @@ public class MsgWriter {
             }
             try {
                 Message last = write();
-                System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + msgNum + " at " + System.currentTimeMillis());
+                System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + index.getNo()
+                        + " at " + System.currentTimeMillis());
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -22,5 +22,9 @@ public class Const {
 
     public final static int T_INTERVAL_BIT = 8;
 
+    public final static int T_INTERVAL_NUM = 1 << 8 - 1;
+
+    public final static long AT_SPLIT = -1;
+
 
 }

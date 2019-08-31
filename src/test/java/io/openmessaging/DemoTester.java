@@ -1,6 +1,7 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 import java.util.*;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -11,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class DemoTester {
     
-    private final static long BASE_ =  32295086730024l;
+    private final static long BASE_ = 0l;// 32295086730024l;
 
     public static void main(String args[]) throws Exception {
         //评测相关配置

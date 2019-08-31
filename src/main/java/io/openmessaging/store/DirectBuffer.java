@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
  */
 public class DirectBuffer {
 
-    private final static int _1G = 1024 * 1024 * 1024;
+    public final static int _1G = 1024 * 1024 * 1024;
 
     private static int pos;
 
