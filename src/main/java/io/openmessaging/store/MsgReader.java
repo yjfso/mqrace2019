@@ -8,6 +8,7 @@ import io.openmessaging.util.ByteUtil;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author yinjianfeng
@@ -27,37 +28,9 @@ public class MsgReader {
         this.index = index;
     }
 
+    public AtomicLong time = new AtomicLong();
+
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-//        int startPile, pointer, length;
-//        long minNo;
-//        {
-//            //tMin
-//            long pile = tMin >> T_INTERVAL_BIT;
-//            startPile = (int) (pile - index.startPile);
-//            if (startPile <= 0) {
-//                //tMin 小于最小值
-//                startPile = 0;
-//                pointer = 0;
-//            } else {
-//                pointer = DichotomicUtil.findGte(index.segments.get(startPile), (int) (tMin - (pile << T_INTERVAL_BIT)));
-//            }
-//            minNo = index.pileIndexes.get(startPile) + pointer;
-//        }
-//
-//        {
-//            //tMax
-//            long pile = tMax >> T_INTERVAL_BIT;
-//            int endPile = (int) (pile - index.startPile);
-//            int endPointer;
-//            if (endPile >= index.pileIndexes.getPos() - 1) {
-//                //tMax 大于最大值
-//                endPile = index.pileIndexes.getPos() - 1;
-//                endPointer = index.segments.get(endPile).length - 1;
-//            } else  {
-//                endPointer = DichotomicUtil.findLte(index.segments.get(endPile), (int) (tMax - (pile << T_INTERVAL_BIT)));
-//            }
-//            length = 1 + index.pileIndexes.get(endPile) + endPointer - (int)minNo;
-//        }
         List<Message> messages = new LinkedList<>();
         ByteObjectPool byteObjectPool = bodyByte.get();
         IndexIterator indexIterator = index.getIterator(tMin, tMax);
@@ -65,8 +38,11 @@ public class MsgReader {
         if (length < 0) {
             System.out.println("=======");
         }
+        long start = System.currentTimeMillis();
         byte[] as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
         byte[] bodies = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
+        long end = System.currentTimeMillis();
+        time.getAndAdd(end - start);
         for (int i = 0; i < length; i++) {
             long t = indexIterator.nextT();
             if (t > tMax) {
@@ -95,12 +71,17 @@ public class MsgReader {
     public void getMessageDone() {
         bodyFile = null;
         bodyByte = null;
+        System.out.println("read time:" + time.get());
+        time.set(0);
     }
 
     public long getAvg(long aMin, long aMax, long tMin, long tMax) {
         IndexIterator indexIterator = index.getIterator(tMin, tMax);
         int length = indexIterator.getLength();
+        long start = System.currentTimeMillis();
         byte[] as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
+        long end = System.currentTimeMillis();
+        time.addAndGet(end - start);
         long ta = 0;
         int j = 0;
         for (int i = 0; i < length; i ++) {

@@ -1,9 +1,9 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
-import java.util.*;
-
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -93,6 +93,7 @@ public class DemoTester {
         for (int i = 0; i < checkTsNum; i++) {
             checks[i].join();
         }
+        messageStore.done();
         long checkEnd = System.currentTimeMillis();
         System.out.printf("Value Check: %d ms Num: %d\n", checkEnd - checkStart, valueCheckNum.get());
 

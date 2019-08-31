@@ -36,4 +36,5 @@ public abstract class MessageStore {
      */
     abstract long getAvgValue(long aMin, long aMax, long tMin, long tMax);
 
+    abstract void done();
 }
