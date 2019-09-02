@@ -53,8 +53,6 @@ public class MsgReader {
         ByteBuffer byteBuffer = bodies.getByteBuffer();
 //        BufferReader as = asFuture.get();
 //        BufferReader bodies = bodiesFuture.get();
-        System.out.println("read aMin:" + aMin + " aMax:" + aMax + " tMin:" + tMin + " tMax:" + tMax +
-                " isReadBuffer:" + as.isReadBuffer() + " bodies:" + byteBuffer.toString());
 
         for (int i = 0; i < length; i++) {
             long t = indexIterator.nextT();
@@ -64,6 +62,7 @@ public class MsgReader {
 
             long a = as.getLong();
             if (a < aMin || a > aMax) {
+                byteBuffer.position(byteBuffer.position() + Const.BODY_SIZE);
                 continue;
             }
             Message message = byteObjectPool.get();
@@ -72,9 +71,6 @@ public class MsgReader {
             message.setA(a);
             message.setT(t);
             messages.add(message);
-            if (ByteBuffer.wrap(message.getBody()).getLong(26) != a) {
-                System.out.println("====");
-            }
         }
         byteObjectPool.reset();
         return messages;
