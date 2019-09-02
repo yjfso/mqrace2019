@@ -7,6 +7,7 @@ import io.openmessaging.index.TIndex;
 import io.openmessaging.util.DynamicArray;
 import io.openmessaging.util.SimpleThreadLocal;
 
+import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,11 +47,11 @@ public class MsgReader {
         IndexIterator indexIterator = index.getIterator(tMin, tMax);
         int length = indexIterator.getLength();
 
-        VfsFuture asFuture = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
-        VfsFuture bodiesFuture = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
+        BufferReader as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
+        BufferReader bodies = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
 
-        BufferReader as = asFuture.get();
-        BufferReader bodies = bodiesFuture.get();
+//        BufferReader as = asFuture.get();
+//        BufferReader bodies = bodiesFuture.get();
 
         for (int i = 0; i < length; i++) {
             long t = indexIterator.nextT();
@@ -63,10 +64,14 @@ public class MsgReader {
                 continue;
             }
             Message message = byteObjectPool.get();
-            System.arraycopy(bodies.getBytes(), i * Const.BODY_SIZE, message.getBody(), 0, Const.BODY_SIZE);
+            bodies.getByteBuffer().get(message.getBody());
+//            System.arraycopy(bodies.getBytes(), i * Const.BODY_SIZE, message.getBody(), 0, Const.BODY_SIZE);
             message.setA(a);
             message.setT(t);
             messages.add(message);
+            if (ByteBuffer.wrap(message.getBody()).getLong(26) != a) {
+                System.out.println("====");
+            }
         }
         byteObjectPool.reset();
         return messages;
@@ -80,7 +85,7 @@ public class MsgReader {
     public long getAvg(long aMin, long aMax, long tMin, long tMax) {
         IndexIterator indexIterator = index.getIterator(tMin, tMax);
         int length = indexIterator.getLength();
-        BufferReader as = atFile.read(indexIterator.getStartNo() << 3,  length << 3).get();
+        BufferReader as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);//.get();
         long ta = 0;
         int j = 0;
         for (int i = 0; i < length; i ++) {

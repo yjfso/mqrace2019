@@ -1,6 +1,6 @@
 package io.openmessaging.buffer;
 
-import io.openmessaging.util.ByteUtil;
+import java.nio.ByteBuffer;
 
 import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
 import static io.openmessaging.common.Const.MAX_GET_MSG_NUM;
@@ -11,7 +11,8 @@ import static io.openmessaging.common.Const.MAX_GET_MSG_NUM;
  */
 public class BufferReader {
 
-    private byte[] val;
+    private ByteBuffer val;
+//    private byte[] val;
 
     private boolean readBuffer;
 
@@ -20,7 +21,8 @@ public class BufferReader {
     private int size;
 
     public BufferReader(int bitSize) {
-        val = new byte[bitSize * MAX_GET_MSG_NUM];
+//        val = new byte[bitSize * MAX_GET_MSG_NUM];
+        val = ByteBuffer.allocateDirect(bitSize * MAX_GET_MSG_NUM);
     }
 
     public void initFromBuffer(long offset) {
@@ -32,9 +34,15 @@ public class BufferReader {
         readBuffer = false;
         this.offset = 0;
         this.size = size;
+        val.clear().limit(size);
     }
 
     public byte[] getBytes() {
+//        return val;
+        return null;
+    }
+
+    public ByteBuffer getByteBuffer() {
         return val;
     }
 
@@ -43,7 +51,8 @@ public class BufferReader {
             return ABuffer.get(offset ++);
         }
         try {
-            return ByteUtil.bytes2long(val, offset);
+            return val.getLong(offset);
+//            return ByteUtil.bytes2long(val, offset);
         } finally {
             offset += 8;
         }

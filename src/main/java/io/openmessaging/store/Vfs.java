@@ -7,7 +7,6 @@ import io.openmessaging.util.SimpleThreadLocal;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
@@ -31,7 +30,7 @@ import java.util.function.Consumer;
  */
 public class Vfs {
 
-    private static ExecutorService executorService = Executors.newFixedThreadPool(8);
+    private static ExecutorService executorService = Executors.newFixedThreadPool(1);
 
     public enum VfsEnum {
         //
@@ -47,31 +46,32 @@ public class Vfs {
 
         public Vfs vfs = new Vfs(this);
 
-        private SimpleThreadLocal<VfsFuture> futureLocal;
+        private SimpleThreadLocal<BufferReader> bufferReaderLocal;
 
         VfsEnum(int bitSize) {
-            futureLocal = SimpleThreadLocal.withInitial(() -> new VfsFuture(bitSize));
+            bufferReaderLocal = SimpleThreadLocal.withInitial(() -> new BufferReader(bitSize));
         }
 
         boolean inBuffer(long offset, int size) {
             return false;
         }
 
-        public VfsFuture read(long offset, int size) {
-            VfsFuture future = futureLocal.get();
+        public BufferReader read(long offset, int size) {
+            BufferReader bufferReader = bufferReaderLocal.get();
             if (inBuffer(offset, size)) {
-                future.forceGet().initFromBuffer(offset);
-                return future;
+                bufferReader.initFromBuffer(offset);
+                return bufferReader;
             }
-            future.init(size);
-            executorService.submit(
-                    () -> {
-                        BufferReader bufferReader = future.forceGet();
-                        vfs.read(offset, bufferReader);
-                        future.done();
-                    }
-            );
-            return future;
+            bufferReader.init(size);
+            vfs.readByFileChannel(offset, bufferReader);
+//            executorService.submit(
+//                    () -> {
+//                        BufferReader bufferReader = future.forceGet();
+//                        vfs.readByFileChannel(offset, bufferReader);
+//                        future.done();
+//                    }
+//            );
+            return bufferReader;
         }
 
         public void write(ByteBuffer src, Consumer<ByteBuffer> consumer) {
@@ -81,9 +81,9 @@ public class Vfs {
         public static void getMsgDone() {
             body.vfs.close();
             body.vfs = null;
-            body.futureLocal = null;
+            body.bufferReaderLocal = null;
 
-            at.futureLocal = SimpleThreadLocal.withInitial(() -> new VfsFuture(Const.A_SIZE));
+            at.bufferReaderLocal = SimpleThreadLocal.withInitial(() -> new BufferReader(Const.A_SIZE));
         }
     }
 
@@ -97,13 +97,18 @@ public class Vfs {
 
     private FileChannel fileChannel;
 
+    private SimpleThreadLocal<FileChannel> fileChannelLocal = SimpleThreadLocal.withInitial(this::fileChannel);
+
     private SimpleThreadLocal<Map<Integer, MappedByteBuffer>> bufferThreadLocal
             = SimpleThreadLocal.withInitial(HashMap::new);
 
     private void makeSureFile(String fileName){
-        File file = new File(fileName);
-        try (RandomAccessFile ra = new RandomAccessFile(file, "rw")){
-            ra.setLength(1 << FILE_SIZE);
+        try {
+            File file = new File(fileName);
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -221,39 +226,26 @@ public class Vfs {
         }
     }
 
-    private byte[] readByfileChannel(long offset, int size) {
+    private void readByFileChannel(long offset, BufferReader bufferReader) {
         try {
-            byte[] result = null;
-            while (result == null) {
-                try {
-                    result = new byte[size];
-                } catch (OutOfMemoryError e) {
-                    try {
-                        System.out.println("outOfMemory in VFS.read");
-                        Thread.sleep(3);
-                    } catch (InterruptedException e1) {
-                        //
-                    }
-                }
-            }
-
-            int startNo = (int)(offset >>> FILE_SIZE);
-            int endNo = (int)((offset + size) >>> FILE_SIZE);
-            int realOffset = (int)(offset - ((long) startNo << FILE_SIZE));
-            if (startNo == endNo) {
-                ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(result);
-            } else {
-                int length = (1 << FILE_SIZE) - realOffset;
-                ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(result, 0, length);
-                for (int i = startNo + 1; i < endNo; i++) {
-                    ((MappedByteBuffer)mappedByteBuffer(i).position(0)).get(result, length, 1 << FILE_SIZE);
-                    length += (1<<FILE_SIZE);
-                }
-                ((MappedByteBuffer)mappedByteBuffer(endNo).position(0)).get(result, length, size - length);
-            }
-            return result;
+            fileChannelLocal.get().position(offset).read(bufferReader.getByteBuffer());
+            bufferReader.getByteBuffer().flip();
+//            int startNo = (int)(offset >>> FILE_SIZE);
+//            int endNo = (int)((offset + size) >>> FILE_SIZE);
+//            int realOffset = (int)(offset - ((long) startNo << FILE_SIZE));
+//            if (startNo == endNo) {
+//                ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(bufferReader.getBytes(), 0 , size);
+//            } else {
+//                int length = (1 << FILE_SIZE) - realOffset;
+//                ((MappedByteBuffer)mappedByteBuffer(startNo).position(realOffset)).get(bufferReader.getBytes(), 0, length);
+//                for (int i = startNo + 1; i < endNo; i++) {
+//                    ((MappedByteBuffer)mappedByteBuffer(i).position(0)).get(bufferReader.getBytes(), length, 1 << FILE_SIZE);
+//                    length += (1<<FILE_SIZE);
+//                }
+//                ((MappedByteBuffer)mappedByteBuffer(endNo).position(0)).get(bufferReader.getBytes(), length, size - length);
+//            }
         } catch (Exception e) {
-            System.out.println("read offset:" + offset + "size:" + size + "catch error");
+            System.out.println("read offset:" + offset + "size:" + bufferReader.getSize() + "catch error");
             e.printStackTrace();
             throw new RuntimeException(e);
         }

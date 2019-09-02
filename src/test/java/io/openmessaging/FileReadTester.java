@@ -2,6 +2,7 @@ package io.openmessaging;
 
 import io.openmessaging.common.Const;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
@@ -28,30 +29,36 @@ public class FileReadTester {
         }
     }
 
-    private static int readNum = 100000;
+    private static int readNum = 1000000;
 
     private static int threadNum = 4;
 
-    private static String path = Const.DATA_PATH + "at";
+    private static String path = Const.DATA_PATH + "at_";
 
     private static Meta[][] metas = new Meta[threadNum][readNum];
 
     public static void main(String[] args) {
-//        try {
-//            FileChannel fileChannel = FileChannel.open(Paths.get(path), StandardOpenOption.WRITE, StandardOpenOption.READ);
-//            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(Integer.MAX_VALUE);
-//            for (int i = 0; i < Integer.MAX_VALUE / 8; i++) {
-//                byteBuffer.putLong(i);
+//        for (int z = 0; z < 8; z++) {
+//            try {
+//                File file = new File(path);
+//                if (!file.exists()) {
+//                    file.getParentFile().mkdirs();
+//                    file.createNewFile();
+//                }
+//                FileChannel fileChannel = FileChannel.open(Paths.get(path), StandardOpenOption.WRITE, StandardOpenOption.READ);
+//                for (int z = 0; z < 8; z++) {
+//                    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(Integer.MAX_VALUE);
+//                    for (int i = 0; i < Integer.MAX_VALUE / 8; i++) {
+//                        byteBuffer.putLong(i);
+//                    }
+//                    byteBuffer.flip();
+//                    fileChannel.write(byteBuffer);
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
 //            }
-//            for (int j = 0; j < 2; j++) {
-//
-//                byteBuffer.flip();
-//                fileChannel.write(byteBuffer);
-//            }
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
 //        }
+
 //
 //
 //        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1000);
@@ -74,8 +81,8 @@ public class FileReadTester {
         }
 
         for (int i = 0; i < 5; i++) {
-            measureTime("fileChannel", FileReadTester::fileChannel);
-            measureTime("fileChannel", FileReadTester::asyncFileChannel);
+//            measureTime("fileChannel", FileReadTester::fileChannel);
+//            measureTime("asyncfileChannel", FileReadTester::asyncFileChannel);
             measureTime("mappedByteBuffer", FileReadTester::mappedByteBuffer);
             System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
             try {

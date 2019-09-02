@@ -7,6 +7,7 @@ import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
+import static io.openmessaging.common.Const.MAX_GET_MSG_NUM;
 
 /**
  * @author yinjianfeng
@@ -16,7 +17,7 @@ public class DirectBuffer {
 
     private int pos;
 
-    final static int LENGTH = Integer.MAX_VALUE >> 3;
+    final static int LENGTH = (Integer.MAX_VALUE - MAX_GET_MSG_NUM * 42 * 20) >> 3;
 
     private Buffer buffer = ByteBuffer.allocateDirect(LENGTH << 3);
 
