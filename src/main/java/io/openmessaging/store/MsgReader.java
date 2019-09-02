@@ -50,8 +50,11 @@ public class MsgReader {
         BufferReader as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
         BufferReader bodies = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
 
+        ByteBuffer byteBuffer = bodies.getByteBuffer();
 //        BufferReader as = asFuture.get();
 //        BufferReader bodies = bodiesFuture.get();
+        System.out.println("read aMin:" + aMin + " aMax:" + aMax + " tMin:" + tMin + " tMax:" + tMax +
+                " isReadBuffer:" + as.isReadBuffer() + " bodies:" + byteBuffer.toString());
 
         for (int i = 0; i < length; i++) {
             long t = indexIterator.nextT();
@@ -64,7 +67,7 @@ public class MsgReader {
                 continue;
             }
             Message message = byteObjectPool.get();
-            bodies.getByteBuffer().get(message.getBody());
+            byteBuffer.get(message.getBody());
 //            System.arraycopy(bodies.getBytes(), i * Const.BODY_SIZE, message.getBody(), 0, Const.BODY_SIZE);
             message.setA(a);
             message.setT(t);
