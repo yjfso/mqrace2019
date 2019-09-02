@@ -22,7 +22,7 @@ public class DichotomicUtil {
                 }
                 break;
             }
-            int half = left + ((right - left) >> 1);
+            int half = left + ((right - left) >>> 1);
             int actVal = ByteUtil.unsignedByte(data[half]);
             if (actVal == dst) {
                 best = half;
@@ -55,7 +55,7 @@ public class DichotomicUtil {
                 }
                 break;
             }
-            int half = left + ((right - left) >> 1);
+            int half = left + ((right - left) >>> 1);
             int actVal = ByteUtil.unsignedByte(data[half]);
             if (actVal == dst) {
                 best = half;

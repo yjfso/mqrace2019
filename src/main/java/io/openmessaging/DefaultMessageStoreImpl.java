@@ -1,11 +1,11 @@
 package io.openmessaging;
 
-import io.openmessaging.bean.ThreadMessage;
-import io.openmessaging.bean.ThreadMessageManager;
 import io.openmessaging.common.BoolLock;
 import io.openmessaging.index.TIndex;
 import io.openmessaging.store.MsgReader;
+import io.openmessaging.store.MsgReaderInitiator;
 import io.openmessaging.store.MsgWriter;
+import io.openmessaging.store.MsgWriterInitiator;
 
 import java.util.List;
 
@@ -15,50 +15,32 @@ import java.util.List;
  */
 public class DefaultMessageStoreImpl extends MessageStore {
 
-    private BoolLock putInit = new BoolLock();
-
-    private BoolLock readInit = new BoolLock();
-
     private BoolLock readAvgInit = new BoolLock();
-
-    private ThreadMessageManager threadMessageManager = new ThreadMessageManager();
-
-    private ThreadLocal<ThreadMessage> messages = ThreadLocal.withInitial(
-            () -> new ThreadMessage(threadMessageManager)
-    );
 
     private TIndex index = new TIndex();
 
-    private MsgWriter msgWriter = new MsgWriter(index, threadMessageManager);
+    private MsgWriter msgWriter = new MsgWriterInitiator(index, this);
 
-    private volatile MsgReader msgReader;
+    private MsgReader msgReader = new MsgReaderInitiator(((MsgWriterInitiator)msgWriter).getMsgWriter(), index, this);
 
     @Override
     public void put(Message message) {
-        messages.get().put(message);
-        if (putInit.tryLock()) {
-            msgWriter.start();
-        }
+        msgWriter.put(message);
+    }
+
+    public void setMsgWriter(MsgWriter msgWriter) {
+        this.msgWriter = msgWriter;
     }
 
     @Override
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        if (readInit.tryLock()) {
-            msgWriter.stop();
-            msgReader = new MsgReader(index);
-            System.out.println("======reader is ready=======");
-            msgWriter = null;
-        }
-        while (msgReader == null) {
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
         return msgReader.getMessage(aMin, aMax, tMin, tMax);
     }
 
+    public void setMsgReader(MsgReader msgReader) {
+        msgWriter = null;
+        this.msgReader = msgReader;
+    }
 
     @Override
     public long getAvgValue(long aMin, long aMax, long tMin, long tMax) {

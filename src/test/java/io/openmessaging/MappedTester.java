@@ -17,7 +17,7 @@ public class MappedTester {
             new Thread(
                     () -> {
                         while (true) {
-                            byte[] bytes =Vfs.VfsEnum.at.read(ThreadLocalRandom.current().nextLong(Integer.MAX_VALUE * 2L - 100000),
+                            Vfs.VfsEnum.at.read(ThreadLocalRandom.current().nextLong(Integer.MAX_VALUE * 2L - 100000),
                                     ThreadLocalRandom.current().nextInt(100000));
                         }
                     }

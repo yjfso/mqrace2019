@@ -14,7 +14,9 @@ public class Const {
 
     public final static int BODY_SIZE = 34;
 
-    public final static int WRITE_ASYNC_NUM = 400;
+    public final static int A_SIZE = 8;
+
+    public final static int WRITE_ASYNC_NUM = 300;
 
     public final static int MAX_DUMP_SIZE = 16 * 1024;
 
@@ -25,6 +27,8 @@ public class Const {
     public final static int T_INTERVAL_NUM = 1 << 8 - 1;
 
     public final static long AT_SPLIT = -1;
+
+    public final static int MAX_GET_MSG_NUM = 50_0000;
 
 
 }

@@ -3,6 +3,7 @@ package io.openmessaging.index;
 import io.openmessaging.store.IndexIterator;
 import io.openmessaging.store.TBits;
 import io.openmessaging.util.DynamicIntArray;
+import io.openmessaging.util.SimpleThreadLocal;
 
 import static io.openmessaging.common.Const.T_INTERVAL_BIT;
 
@@ -13,14 +14,14 @@ import static io.openmessaging.common.Const.T_INTERVAL_BIT;
 public class TIndex {
 
     //存储每段数据头部的No值
-    public final DynamicIntArray pileIndexes = new DynamicIntArray(16_000_000, 1000);
+    public final DynamicIntArray pileIndexes = new DynamicIntArray(16_000_000, (byte) 10);
 
     //存储每段Tbits头部的index值
-    public final DynamicIntArray pileSegment = new DynamicIntArray(16_000_000, 1000);
+    public final DynamicIntArray pileSegment = new DynamicIntArray(16_000_000, (byte) 10);
 
     private TBits tBits = new TBits();
 
-    private final ThreadLocal<IndexIterator> indexIteratorLocal = ThreadLocal.withInitial(() -> new IndexIterator(tBits));
+    private final SimpleThreadLocal<IndexIterator> indexIteratorLocal = SimpleThreadLocal.withInitial(() -> new IndexIterator(tBits));
 
     public long startPile;
 
@@ -72,7 +73,7 @@ public class TIndex {
         tBits.writeDone();
     }
 
-    public IndexIterator getIterator (long tMin, long tMax){
+    public IndexIterator getIterator(long tMin, long tMax) {
         IndexIterator indexIterator = indexIteratorLocal.get();
 
         {

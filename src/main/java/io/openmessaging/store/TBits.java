@@ -1,12 +1,9 @@
 package io.openmessaging.store;
 
 import io.openmessaging.common.Const;
-
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
+import io.openmessaging.util.DynamicIntArray;
 
 import static io.openmessaging.common.Const.T_INTERVAL_NUM;
-import static io.openmessaging.store.DirectBuffer._1G;
 
 /**
  * @author yinjianfeng
@@ -20,8 +17,10 @@ public class TBits {
      * 2、2、3、5
      * 011010010
      */
-    public static IntBuffer tByteBuffer = ByteBuffer.allocateDirect(_1G).asIntBuffer();
-    
+    private static DynamicIntArray tByteBuffer = new DynamicIntArray(105_000_000, (byte) 15);
+
+//    private static IntBuffer tByteBuffer = DirectBuffer.require(_1G).asIntBuffer();
+
     private final static byte BIT_LENGTH = 32;
 
     private final static byte BIT_LENGTH_MOVE = 5;
@@ -90,7 +89,7 @@ public class TBits {
         }
         int zeroNum = dst;
 
-        int length = tByteBuffer.limit() - pos;
+        int length = tByteBuffer.getPos() - pos;
         for (int i = 0; i < length; i++) {
             int val = tByteBuffer.get(pos);
             int num0 = 0;
@@ -120,7 +119,7 @@ public class TBits {
     public long endNo(int pos, int dst) {
         int zeroNum = dst + 1;
 
-        int length = tByteBuffer.limit() - pos;
+        int length = tByteBuffer.getPos() - pos;
         for (int i = 0; i < length; i++) {
             int val = tByteBuffer.get(pos++);
             int num0 = 0;
@@ -150,14 +149,15 @@ public class TBits {
             val = 0;
             surplusNum = BIT_LENGTH;
         }
-        return tByteBuffer.position();
+        return tByteBuffer.getPos();
     }
 
     public void writeDone() {
         tByteBuffer.put(val);
-        tByteBuffer.slice();
-        tByteBuffer.flip();
-        tByteBuffer = tByteBuffer.slice();
+//        tByteBuffer.slice();
+//        tByteBuffer.flip();
+//        tByteBuffer = tByteBuffer.slice();
+//        DirectBuffer.writeDown(tByteBuffer.capacity() * 4);
     }
 
     public boolean nextT(IndexIterator indexIterator) {

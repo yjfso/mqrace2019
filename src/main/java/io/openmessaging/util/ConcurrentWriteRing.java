@@ -1,37 +1,57 @@
 package io.openmessaging.util;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+
 /**
  * @author yinjianfeng
  * @date 2019/8/14
  */
-public class Ring<E> {
+public class ConcurrentWriteRing<E> {
 
     private E[] es;
 
     private int readIndex;
 
-    private int writeIndex;
+//    private int writeIndex;
 
-    public Ring(E[] es) {
+    private AtomicInteger writeIndex = new AtomicInteger();
+
+    public ConcurrentWriteRing(E[] es) {
         this.es = es;
     }
 
-    public void add(E e) {
+    public ConcurrentWriteRing<E> fill (Supplier<E> supplier) {
+        for (int i = 0; i < es.length; i++) {
+            es[i] = supplier.get();
+        }
+        return this;
+    }
+
+    public void threadSafeAdd(E e) {
+        int writeIndex = this.writeIndex.getAndIncrement();
+        if (writeIndex >= es.length) {
+            synchronized (this) {
+                writeIndex = this.writeIndex.getAndIncrement();
+                if (writeIndex >= es.length) {
+                    writeIndex = 0;
+                    this.writeIndex.set(1);
+                }
+            }
+        }
         while (es[writeIndex] != null) {
             try {
                 Thread.sleep(3);
+                System.out.println("return" + writeIndex + "|" + readIndex);
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
         }
-        es[writeIndex++] = e;
-        if (writeIndex == es.length) {
-            writeIndex = 0;
-        }
+        es[writeIndex] = e;
     }
 
     public boolean isFull() {
-        return readIndex == writeIndex && es[readIndex] != null;
+        return readIndex == writeIndex.get() && es[readIndex] != null;
     }
 
     public E pop() {
@@ -63,20 +83,8 @@ public class Ring<E> {
         return e;
     }
 
-    public E getLast() {
-        int last = writeIndex;
-        if (last == 0) {
-            return es[es.length - 1];
-        }
-        return es[last - 1];
-    }
-
     public int getReadIndex() {
         return readIndex;
-    }
-
-    public boolean isEmpty() {
-        return readIndex == writeIndex && es[readIndex] == null;
     }
 
     @Override

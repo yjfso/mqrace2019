@@ -64,7 +64,7 @@ public class DichotomicIndex {
             if (right - left < 2) {
                 break;
             }
-            int half = left + ((right - left) >> 1);
+            int half = left + ((right - left) >>> 1);
             long dst = tMeta.getLong(half << 3);
             if (dst == t) {
                 break;
@@ -88,7 +88,7 @@ public class DichotomicIndex {
             if (right - left < 2) {
                 break;
             }
-            int half = left + ((right - left) >> 1);
+            int half = left + ((right - left) >>> 1);
             long dst = tMeta.getLong(half << 3);
             if (dst == t) {
                 break;

@@ -20,7 +20,7 @@ public class VolatileTester {
 
     public static void main(String[] args) {
         Ring<Object> ring = new Ring<Object>(new Object[30]);
-        ring.fill(Object::new);
+//        ring.fill(Object::new);
         int time = 9999999;
         System.out.println("start=====");
         ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -40,7 +40,7 @@ public class VolatileTester {
                                     } catch (Exception e) {
 
                                     }
-                                    ring.add1(object);
+                                    ring.add(object);
                                 }
                         );
                     }

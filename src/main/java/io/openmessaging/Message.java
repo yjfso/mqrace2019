@@ -15,6 +15,8 @@ public class Message {
 
     private int hash = 0;
 
+    public Message() {}
+
     public Message(long a, long t, byte[] body) {
         this.a = a;
         this.t = t;

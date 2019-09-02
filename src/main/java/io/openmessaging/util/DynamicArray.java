@@ -10,7 +10,7 @@ import java.util.function.Function;
  */
 public class DynamicArray<T> {
 
-    private final T[] buffer;
+    private T[] buffer;
 
     private List<T[]> buffers;
 
@@ -20,42 +20,32 @@ public class DynamicArray<T> {
 
     private Function<Integer, T[]> function;
 
-    private int pos;
+    private int no;
+
+    private int realPos;
 
     public DynamicArray(Integer initSize, Integer size, Function<Integer, T[]> function) {
         this.initSize = initSize;
         this.size = size;
         this.function = function;
         buffer = function.apply(initSize);
+        buffers = new ArrayList<>();
+        buffers.add(buffer);
     }
 
-    public void put(T t) {
-        if (pos == initSize) {
-            buffers = new ArrayList<>();
-            buffers.add(function.apply(size));
-            buffers.get(0)[0] = t;
-        } else if (pos > initSize) {
-            int no = (pos - initSize) / size;
-            int rPos = (pos - initSize) % size;
-            if (rPos == 0) {
+    public T get() {
+        if (realPos == buffer.length) {
+            if (++no == buffers.size()) {
                 buffers.add(function.apply(size));
             }
-            buffers.get(no)[rPos] = t;
-        } else {
-            buffer[pos] = t;
+            buffer = buffers.get(no);
         }
-        pos ++;
+        return buffer[realPos++];
     }
 
-    public T get(int pos) {
-        if (pos >= this.pos) {
-            pos = this.pos - 1;
-        }
-        if (pos > initSize) {
-            int no = (pos - initSize) / size;
-            int rPos = (pos - initSize) % size;
-            return buffers.get(no)[rPos];
-        }
-        return buffer[pos];
+    public void reset() {
+        no = 0;
+        realPos = 0;
+        buffer = buffers.get(0);
     }
 }

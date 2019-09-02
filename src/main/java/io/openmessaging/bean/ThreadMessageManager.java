@@ -18,15 +18,25 @@ public class ThreadMessageManager {
 
     private final Ring<Message> DUMP_MESSAGES = new Ring<>(new Message[Const.MAX_DUMP_SIZE]);
 
+    private volatile long lastRegisterTime;
+
     public void register(ThreadMessage threadMessage) {
         synchronized (TM) {
             TM.add(threadMessage);
+            lastRegisterTime = System.currentTimeMillis();
         }
     }
 
     private StreamLoserTree<ThreadMessage, Message> streamLoserTree;
 
     public void init() {
+        while (System.currentTimeMillis() - lastRegisterTime < 400) {
+            try {
+                Thread.sleep(50);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         streamLoserTree = new StreamLoserTree<>(TM);
     }
 

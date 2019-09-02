@@ -15,39 +15,59 @@ public class DynamicIntArray {
 
     private int initSize;
 
-    private int size;
+    private byte sizeBit;
 
     private int pos;
 
-    public DynamicIntArray(int initSize, int size) {
+    private int no = -1;
+
+    private int realPos;
+
+    public DynamicIntArray(int initSize, byte sizeBit) {
         this.initSize = initSize;
-        this.size = size;
+        this.sizeBit = sizeBit;
         buffer = new int[initSize];
     }
 
     public void put(int t) {
-        if (pos == initSize) {
-            buffers = new ArrayList<>();
-            buffers.add(new int[size]);
-            buffers.get(0)[0] = t;
-        } else if (pos > initSize) {
-            int no = (pos - initSize) / size;
-            int rPos = (pos - initSize) % size;
-            if (rPos == 0) {
-                buffers.add(new int[size]);
-            }
-            buffers.get(no)[rPos] = t;
+        int[] dst;
+        if (no == -1) {
+            dst = buffer;
         } else {
-            buffer[pos] = t;
+            dst = buffers.get(no);
         }
+        dst[realPos++] = t;
         pos ++;
+        if (realPos == dst.length) {
+            realPos = 0;
+            if (++no == 0) {
+                buffers = new ArrayList<>();
+            }
+            buffers.add(new int[1 << sizeBit]);
+        }
+
+//        if (pos == initSize) {
+//            buffers = new ArrayList<>();
+//            buffers.add(new int[1 << sizeBit]);
+//            buffers.get(0)[0] = t;
+//        } else if (pos > initSize) {
+//            int no = (pos - initSize) >>> sizeBit;
+//            int rPos = (pos - initSize) - (no << sizeBit);
+//            if (rPos == 0) {
+//                buffers.add(new int[1 << sizeBit]);
+//            }
+//            buffers.get(no)[rPos] = t;
+//        } else {
+//            buffer[pos] = t;
+//        }
+//        pos ++;
     }
 
     public int get(int pos) {
         if (pos > initSize) {
-            int no = (pos - initSize) / size;
-            int rPos = (pos - initSize) % size;
-            return buffers.get(no)[rPos];
+            int no = (pos - initSize) >>> sizeBit;
+            int rPos = (pos - initSize) - (no << sizeBit);
+            return buffers.get(no + 1)[rPos];
         }
         return buffer[pos];
     }

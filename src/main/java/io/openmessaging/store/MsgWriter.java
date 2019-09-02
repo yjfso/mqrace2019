@@ -1,12 +1,10 @@
 package io.openmessaging.store;
 
 import io.openmessaging.Message;
+import io.openmessaging.bean.ThreadMessage;
 import io.openmessaging.bean.ThreadMessageManager;
-import io.openmessaging.common.Const;
 import io.openmessaging.index.TIndex;
-import io.openmessaging.util.Ring;
-
-import java.nio.ByteBuffer;
+import io.openmessaging.util.SimpleThreadLocal;
 
 /**
  * @author yinjianfeng
@@ -14,84 +12,31 @@ import java.nio.ByteBuffer;
  */
 public class MsgWriter {
 
-    private Vfs.VfsEnum bodyFile = Vfs.VfsEnum.body;
+    private SimpleThreadLocal<ThreadMessage> messages;
 
-    private Vfs.VfsEnum atFile = Vfs.VfsEnum.at;
-
-    private Ring<ByteBuffer> aBufferRing = new Ring<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
-            .fill(() -> DirectBuffer.ask(8 * Const.MAX_DUMP_SIZE));
-
-    private Ring<ByteBuffer> bodyBufferRing = new Ring<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
-            .fill(() -> DirectBuffer.ask(Const.BODY_SIZE * Const.MAX_DUMP_SIZE));
-
-    private TIndex index;
-
-    private ThreadMessageManager threadMessageManager;
-
-    public MsgWriter(TIndex index, ThreadMessageManager threadMessageManager){
-        this.index = index;
-        this.threadMessageManager = threadMessageManager;
-    }
-
-    private void write(Ring<Message> messages) {
-        if (messages.isEmpty()) {
-            return;
-        }
-        Message message;
-        ByteBuffer atBuffer = aBufferRing.popWait();
-        ByteBuffer bodyBuffer = bodyBufferRing.popWait();
-
-        while ((message = messages.pop()) != null) {
-            index.put(message.getT());
-            try {
-                atBuffer.putLong(message.getA());
-                bodyBuffer.put(message.getBody());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        }
-        atBuffer.flip();
-        atFile.write(atBuffer, e -> {
-            aBufferRing.add1(e);
-            e.clear();
-        });
-        bodyBuffer.flip();
-        bodyFile.write(bodyBuffer, e -> {
-            bodyBufferRing.add1(e);
-            e.clear();
-        });
-        atBuffer.clear();
-        bodyBuffer.clear();
-    }
+    private MsgDumper msgDumper;
 
     private Thread thread;
 
-    private Message write() {
-        threadMessageManager.init();
-        Message last = null;
-        while (true) {
-            Ring<Message> messages = threadMessageManager.dumpStoreMsg();
-            if (messages.isEmpty()) {
-                break;
-            }
-            last = messages.getLast();
-            write(messages);
-        }
-        return last;
+    MsgWriter() {
+    }
+
+    MsgWriter(TIndex index){
+        ThreadMessageManager threadMessageManager = new ThreadMessageManager();
+        messages = SimpleThreadLocal.withInitial(
+                () -> new ThreadMessage(threadMessageManager)
+        );
+        msgDumper = new MsgDumper(index, threadMessageManager);
+    }
+
+    public void put(Message message) {
+        messages.get().put(message);
     }
 
     public void start() {
         thread = new Thread(() -> {
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            try {
-                Message last = write();
-                System.out.println("put last t:" + last.getT() + "; a: " + last.getA() + " total num:" + index.getNo()
-                        + " at " + System.currentTimeMillis());
+                msgDumper.write();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -103,26 +48,12 @@ public class MsgWriter {
     public void stop() {
         try{
             thread.join();
-            thread = null;
-            threadMessageManager = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        index.writeDone();
-        System.out.println("=====write done======");
-        while (!aBufferRing.isFull()) {
-            try {
-                Thread.sleep(1);
-                System.out.println("wait for write done...");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        Vfs.VfsEnum.at.vfs.writeDone();
-        Vfs.VfsEnum.body.vfs.writeDone();
-        aBufferRing = null;
-        bodyBufferRing = null;
-        DirectBuffer.returnAll();
+        thread = null;
+        messages = null;
+        msgDumper.writeDone();
     }
 
 }

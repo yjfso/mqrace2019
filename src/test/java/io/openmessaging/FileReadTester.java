@@ -30,23 +30,45 @@ public class FileReadTester {
 
     private static int readNum = 100000;
 
-    private static int threadNum = 10;
+    private static int threadNum = 4;
 
     private static String path = Const.DATA_PATH + "at";
 
     private static Meta[][] metas = new Meta[threadNum][readNum];
 
     public static void main(String[] args) {
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1000);
-        byteBuffer.putInt(6);
-        byteBuffer.slice().putInt(5);
+//        try {
+//            FileChannel fileChannel = FileChannel.open(Paths.get(path), StandardOpenOption.WRITE, StandardOpenOption.READ);
+//            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(Integer.MAX_VALUE);
+//            for (int i = 0; i < Integer.MAX_VALUE / 8; i++) {
+//                byteBuffer.putLong(i);
+//            }
+//            for (int j = 0; j < 2; j++) {
+//
+//                byteBuffer.flip();
+//                fileChannel.write(byteBuffer);
+//            }
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//
+//        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1000);
+//        byteBuffer.putInt(6);
+//        byteBuffer.slice().putInt(5);
 
         for (int i = 0; i < threadNum; i++) {
             for (int j = 0; j < readNum; j++) {
+                int length = ThreadLocalRandom.current().nextInt(100000);
+                length = (4 * 1024) * (length / (4 * 1024));
+                if (length == 0) {
+                    length = 4 * 1024;
+                }
                 metas[i][j] =
                         new Meta(
                                 ThreadLocalRandom.current().nextLong(Integer.MAX_VALUE * 2L - 100000),
-                                ThreadLocalRandom.current().nextInt(100000)
+                                length
                         );
             }
         }

@@ -75,7 +75,7 @@ public class StreamLoserTree<T extends StreamTreeNode<T, K>, K> {
                 }
             }
 
-            node >>= 1;
+            node >>>= 1;
         }
         tree[0] = winner;
     }

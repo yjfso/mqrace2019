@@ -1,10 +1,12 @@
 package io.openmessaging.store;
 
 import io.openmessaging.Message;
+import io.openmessaging.buffer.Buffer;
+import io.openmessaging.buffer.BufferReader;
 import io.openmessaging.common.Const;
 import io.openmessaging.index.TIndex;
-import io.openmessaging.util.ByteObjectPool;
-import io.openmessaging.util.ByteUtil;
+import io.openmessaging.util.DynamicArray;
+import io.openmessaging.util.SimpleThreadLocal;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -22,25 +24,43 @@ public class MsgReader {
 
     private TIndex index;
 
-    private ThreadLocal<ByteObjectPool> bodyByte = ThreadLocal.withInitial(ByteObjectPool::new);
+    private SimpleThreadLocal<DynamicArray<Message>> bodyByte;
 
-    public MsgReader(TIndex index){
+    MsgReader() {}
+
+    MsgReader(TIndex index){
         this.index = index;
+        bodyByte = SimpleThreadLocal.withInitial(
+                () -> new DynamicArray<>(25_0000, 10000, size -> {
+                    Message[] messages = new Message[size];
+                    for (int i = 0; i < size; i++) {
+                        messages[i] = new Message();
+                        messages[i].setBody(new byte[Const.BODY_SIZE]);
+                    }
+                    return messages;
+                })
+        );
     }
 
     public AtomicLong time = new AtomicLong();
 
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         List<Message> messages = new LinkedList<>();
-        ByteObjectPool byteObjectPool = bodyByte.get();
-        IndexIterator indexIterator = index.getIterator(tMin, tMax);
+        DynamicArray<Message> byteObjectPool = bodyByte.get();
+        Vfs.VfsEnum.at.vfs.cache();
+//        IndexIterator indexIterator = index.getIterator(tMin, tMax);
+        IndexIterator indexIterator = new IndexIterator(new TBits());
+        indexIterator.initBase(1, (int)((3L * Integer.MAX_VALUE) >>> 3));
+        indexIterator.setEndNo((int)(1000 + (3L * Integer.MAX_VALUE) >>> 3));
         int length = indexIterator.getLength();
-        if (length < 0) {
-            System.out.println("=======");
-        }
         long start = System.currentTimeMillis();
-        byte[] as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
-        byte[] bodies = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
+
+        VfsFuture asFuture = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
+        VfsFuture bodiesFuture = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
+
+        BufferReader as = asFuture.get();
+        BufferReader bodies = bodiesFuture.get();
+
         long end = System.currentTimeMillis();
         time.getAndAdd(end - start);
         for (int i = 0; i < length; i++) {
@@ -48,28 +68,23 @@ public class MsgReader {
             if (t > tMax) {
                 break;
             }
-            long a = ByteUtil.bytes2long(as, i << 3);
-            if (a != t) {
-                System.out.println("===");
-            }
+
+            long a = as.getLong();
             if (a < aMin || a > aMax) {
                 continue;
             }
-
-            byte[] body = byteObjectPool.borrowObject();
-            System.arraycopy(bodies, i * Const.BODY_SIZE, body, 0, Const.BODY_SIZE);
-            Message message = new Message(a, t, body);
+            Message message = byteObjectPool.get();
+            System.arraycopy(bodies.getBytes(), i * Const.BODY_SIZE, message.getBody(), 0, Const.BODY_SIZE);
+            message.setA(a);
+            message.setT(t);
             messages.add(message);
         }
-        byteObjectPool.returnAll();
-        if (((LinkedList<Message>) messages).getLast().getT() != Math.min(tMax, aMax)) {
-            System.out.println("===");
-        }
+        byteObjectPool.reset();
         return messages;
     }
 
     public void getMessageDone() {
-        bodyFile = null;
+        bodyFile.close();
         bodyByte = null;
         System.out.println("read time:" + time.get());
         time.set(0);
@@ -79,7 +94,7 @@ public class MsgReader {
         IndexIterator indexIterator = index.getIterator(tMin, tMax);
         int length = indexIterator.getLength();
         long start = System.currentTimeMillis();
-        byte[] as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
+        BufferReader as = atFile.read(indexIterator.getStartNo() << 3,  length << 3).get();
         long end = System.currentTimeMillis();
         time.addAndGet(end - start);
         long ta = 0;
@@ -89,7 +104,7 @@ public class MsgReader {
             if (t > tMax) {
                 break;
             }
-            long a = ByteUtil.bytes2long(as, i << 3);
+            long a = as.getLong();
             if (a < aMin || a > aMax) {
                 continue;
             }
