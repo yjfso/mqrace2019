@@ -1,7 +1,9 @@
 package io.openmessaging.buffer;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
@@ -16,15 +18,15 @@ public class DirectBuffer {
 
     final static int LENGTH = Integer.MAX_VALUE >> 3;
 
-    private ByteBuffer byteBuffer = ByteBuffer.allocateDirect(LENGTH << 3);
+    private Buffer buffer = ByteBuffer.allocateDirect(LENGTH << 3);
 
     public ByteBuffer require(int size) {
         pos += size;
-        byteBuffer.limit(pos);
+        buffer.limit(pos);
         try {
-            return byteBuffer.slice();
+            return ((ByteBuffer) buffer).slice();
         } finally {
-            byteBuffer.position(pos);
+            buffer.position(pos);
         }
     }
 
@@ -33,10 +35,12 @@ public class DirectBuffer {
             if (length <= 0) {
                 return;
             }
-            byteBuffer.clear();
+            ByteBuffer byteBuffer = (ByteBuffer) buffer;
             fileChannel.position(BUFFER_OFFSET + (JvmBuffer.LENGTH << 3));
             byteBuffer.limit(length);
             fileChannel.read(byteBuffer);
+            byteBuffer.flip();
+            buffer = byteBuffer.asLongBuffer();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -44,11 +48,11 @@ public class DirectBuffer {
 
     public void clear(){
         this.pos = 0;
-        byteBuffer.clear();
+        buffer.clear();
     }
 
     public long getLong(int pos) {
-        return byteBuffer.getLong(pos << 3);
+        return ((LongBuffer)buffer).get(pos);
     }
 
 }

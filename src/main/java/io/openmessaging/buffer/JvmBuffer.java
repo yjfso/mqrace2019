@@ -19,7 +19,7 @@ public class JvmBuffer {
 
     public void write(FileChannel fileChannel) {
         try {
-            long endBuffer = Math.min(((long) LENGTH) << 3, BUFFER_END);
+            long endBuffer = Math.min(BUFFER_OFFSET + (((long) LENGTH) << 3), BUFFER_END);
             int readTime = (int)((endBuffer - BUFFER_OFFSET) >> 30);
 
             long startByteOffset = BUFFER_OFFSET;
