@@ -20,13 +20,11 @@ public class Const {
 
     public final static int MAX_DUMP_SIZE = 64 * 1024;
 
-    public final static int MAX_PUT_SIZE = 500 * 1024;
+    public final static int MAX_PUT_SIZE = 800 * 1024;
 
     public final static int T_INTERVAL_BIT = 8;
 
-    public final static int T_INTERVAL_NUM = 1 << 8 - 1;
-
-    public final static long AT_SPLIT = -1;
+    public final static int T_INTERVAL_NUM = (1 << 8) - 1;
 
     public final static int MAX_GET_MSG_NUM = 50_0000;
 

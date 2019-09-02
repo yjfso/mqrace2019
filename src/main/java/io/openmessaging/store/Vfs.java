@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  */
 public class Vfs {
 
-    private static ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private static ExecutorService executorService = Executors.newFixedThreadPool(8);
 
     public enum VfsEnum {
         //
@@ -81,10 +81,12 @@ public class Vfs {
             vfs.write(src, consumer);
         }
 
-        public void close() {
-            vfs.close();
-            vfs = null;
-            futureLocal = null;
+        public static void getMsgDone() {
+            body.vfs.close();
+            body.vfs = null;
+            body.futureLocal = null;
+
+            at.futureLocal = SimpleThreadLocal.withInitial(() -> new VfsFuture(Const.A_SIZE));
         }
     }
 
