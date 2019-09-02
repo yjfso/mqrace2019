@@ -93,7 +93,6 @@ public class DemoTester {
         for (int i = 0; i < checkTsNum; i++) {
             checks[i].join();
         }
-        messageStore.done();
         long checkEnd = System.currentTimeMillis();
         System.out.printf("Value Check: %d ms Num: %d\n", checkEnd - checkStart, valueCheckNum.get());
 

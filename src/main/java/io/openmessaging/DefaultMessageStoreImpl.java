@@ -50,8 +50,4 @@ public class DefaultMessageStoreImpl extends MessageStore {
         return msgReader.getAvg(aMin, aMax, tMin, tMax);
     }
 
-    @Override
-    public void done() {
-        System.out.println("avg read time:" + msgReader.time.get());
-    }
 }

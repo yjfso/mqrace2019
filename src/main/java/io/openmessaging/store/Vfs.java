@@ -58,9 +58,6 @@ public class Vfs {
         }
 
         public VfsFuture read(long offset, int size) {
-            if(size<=0) {
-                System.out.println("=========");
-            }
             VfsFuture future = futureLocal.get();
             if (inBuffer(offset, size)) {
                 future.forceGet().initFromBuffer(offset);
