@@ -31,18 +31,18 @@ public class MsgReaderInitiator extends MsgReader {
 
     @Override
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-//        if (readInit.tryLock()) {
-//            msgWriter.stop();
-//            System.out.println("======reader is ready=======");
-//            writeDone = true;
-//        }
-//        while (!writeDone) {
-//            try {
-//                Thread.sleep(3);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
+        if (readInit.tryLock()) {
+            msgWriter.stop();
+            System.out.println("======reader is ready=======");
+            writeDone = true;
+        }
+        while (!writeDone) {
+            try {
+                Thread.sleep(3);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         defaultMessageStore.setMsgReader(msgReader);
         return msgReader.getMessage(aMin, aMax, tMin, tMax);
     }

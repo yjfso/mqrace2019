@@ -39,9 +39,6 @@ public class IndexIterator {
 
     public void setEndNo(long endNo) {
         length = (int) (endNo - startNo);
-        if (length < 0) {
-            System.out.println("===");
-        }
     }
 
     public long getStartNo() {

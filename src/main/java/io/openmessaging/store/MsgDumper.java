@@ -2,7 +2,7 @@ package io.openmessaging.store;
 
 import io.openmessaging.Message;
 import io.openmessaging.bean.ThreadMessageManager;
-import io.openmessaging.buffer.Buffer;
+import io.openmessaging.buffer.ABuffer;
 import io.openmessaging.common.Const;
 import io.openmessaging.index.TIndex;
 import io.openmessaging.util.ConcurrentWriteRing;
@@ -25,10 +25,10 @@ public class MsgDumper {
     private Vfs.VfsEnum atFile = Vfs.VfsEnum.at;
 
     private ConcurrentWriteRing<ByteBuffer> aBufferRing = new ConcurrentWriteRing<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
-            .fill(() -> Buffer.requireDirect(8 * Const.MAX_DUMP_SIZE));
+            .fill(() -> ABuffer.requireDirect(8 * Const.MAX_DUMP_SIZE));
 
     private ConcurrentWriteRing<ByteBuffer> bodyBufferRing = new ConcurrentWriteRing<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
-            .fill(() -> Buffer.requireDirect(Const.BODY_SIZE * Const.MAX_DUMP_SIZE));
+            .fill(() -> ABuffer.requireDirect(Const.BODY_SIZE * Const.MAX_DUMP_SIZE));
 
     public MsgDumper(TIndex index, ThreadMessageManager threadMessageManager) {
         this.index = index;
@@ -83,8 +83,7 @@ public class MsgDumper {
     }
 
     void writeDone () {
-        index.writeDone();
-        while (!aBufferRing.isFull()) {
+        while (!aBufferRing.isFull() || !bodyBufferRing.isFull()) {
             try {
                 Thread.sleep(1);
                 System.out.println("wait for write done...");
@@ -96,7 +95,7 @@ public class MsgDumper {
         Vfs.VfsEnum.body.vfs.writeDone();
         aBufferRing = null;
         bodyBufferRing = null;
-        Buffer.writeDone();
+        ABuffer.writeDone(index.writeDone());
         Vfs.VfsEnum.at.vfs.cache();
         System.out.println("=====write done======");
     }

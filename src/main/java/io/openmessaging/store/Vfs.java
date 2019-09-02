@@ -1,6 +1,6 @@
 package io.openmessaging.store;
 
-import io.openmessaging.buffer.Buffer;
+import io.openmessaging.buffer.ABuffer;
 import io.openmessaging.buffer.BufferReader;
 import io.openmessaging.common.Const;
 import io.openmessaging.util.SimpleThreadLocal;
@@ -37,7 +37,13 @@ public class Vfs {
         //
         body(Const.BODY_SIZE),
 
-        at(Const.A_SIZE);
+        at(Const.A_SIZE) {
+
+            @Override
+            public boolean inBuffer(long offset, int size) {
+                return ABuffer.inBuffer(offset, size) == ABuffer.InBuffer.in;
+            }
+        };
 
         public Vfs vfs = new Vfs(this);
 
@@ -47,10 +53,17 @@ public class Vfs {
             futureLocal = SimpleThreadLocal.withInitial(() -> new VfsFuture(bitSize));
         }
 
+        boolean inBuffer(long offset, int size) {
+            return false;
+        }
+
         public VfsFuture read(long offset, int size) {
+            if(size<=0) {
+                System.out.println("=========");
+            }
             VfsFuture future = futureLocal.get();
-            if (Buffer.inBuffer(offset, size) == Buffer.InBuffer.in) {
-                future.forceGet().init(offset, size);
+            if (inBuffer(offset, size)) {
+                future.forceGet().initFromBuffer(offset);
                 return future;
             }
             future.init(size);
@@ -114,7 +127,7 @@ public class Vfs {
     private FileChannel fileChannel() {
         String fileName = Const.DATA_PATH + vfsEnum.name();
         try {
-            return FileChannel.open(Paths.get(fileName));
+            return FileChannel.open(Paths.get(fileName), StandardOpenOption.READ);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -180,7 +193,7 @@ public class Vfs {
         executorService.submit(
                 () -> {
                     //缓存中4g a到内存
-                    Buffer.cacheA(fileChannel);
+                    ABuffer.cacheA(fileChannel());
                 }
         );
     }

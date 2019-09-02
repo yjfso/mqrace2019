@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.openmessaging.buffer.Buffer.BUFFER_OFFSET;
-import static io.openmessaging.buffer.Buffer.LONG_NUM_IN_1G;
+import static io.openmessaging.buffer.ABuffer.BUFFER_END;
+import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
 
 /**
  * @author yinjianfeng
@@ -13,15 +13,25 @@ import static io.openmessaging.buffer.Buffer.LONG_NUM_IN_1G;
  */
 public class JvmBuffer {
 
-    private final long[] val = new long[Integer.MAX_VALUE >>> 8];
+    final static int LENGTH = Integer.MAX_VALUE >> 3;
+
+    private final long[] val = new long[LENGTH];
 
     public void write(FileChannel fileChannel) {
         try {
-            LongBuffer longBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, BUFFER_OFFSET, 1 << 30)
-                    .asLongBuffer();
-            longBuffer.get(val, 0, LONG_NUM_IN_1G);
-            longBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, BUFFER_OFFSET + 1 << 30, 1 << 30).asLongBuffer();
-            longBuffer.get(val, LONG_NUM_IN_1G, LONG_NUM_IN_1G);
+            long endBuffer = Math.min(((long) LENGTH) << 3, BUFFER_END);
+            int readTime = (int)((endBuffer - BUFFER_OFFSET) >> 30);
+
+            long startByteOffset = BUFFER_OFFSET;
+
+            for (int i = 0; i <= readTime; i++) {
+                long byteLength = Math.min(endBuffer - startByteOffset, 1 << 30);
+
+                LongBuffer longBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, startByteOffset, byteLength)
+                        .asLongBuffer();
+                longBuffer.get(val, (i << 27), (int)byteLength >>> 3);
+                startByteOffset += (1 << 30);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

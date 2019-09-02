@@ -1,5 +1,6 @@
 package io.openmessaging.index;
 
+import io.openmessaging.buffer.ABuffer;
 import io.openmessaging.store.IndexIterator;
 import io.openmessaging.store.TBits;
 import io.openmessaging.util.DynamicIntArray;
@@ -65,12 +66,13 @@ public class TIndex {
         no ++;
     }
 
-    public void writeDone() {
+    public int writeDone() {
         if (equalNum > 0) {
             tBits.setBit(equalNum);
         }
         lastPile = (lastPile << T_INTERVAL_BIT) + lastSurplus;
         tBits.writeDone();
+        return no;
     }
 
     public IndexIterator getIterator(long tMin, long tMax) {

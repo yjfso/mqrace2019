@@ -31,6 +31,7 @@ public class VfsFuture {
 
     public void done() {
         latch.countDown();
+        latch = null;
     }
 
     public BufferReader forceGet() {

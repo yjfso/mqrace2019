@@ -2,7 +2,7 @@ package io.openmessaging.buffer;
 
 import io.openmessaging.util.ByteUtil;
 
-import static io.openmessaging.buffer.Buffer.BUFFER_OFFSET;
+import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
 import static io.openmessaging.common.Const.MAX_GET_MSG_NUM;
 
 /**
@@ -23,10 +23,9 @@ public class BufferReader {
         val = new byte[bitSize * MAX_GET_MSG_NUM];
     }
 
-    public void init(long offset, int size) {
+    public void initFromBuffer(long offset) {
         readBuffer = true;
         this.offset = (int) ((offset - BUFFER_OFFSET) >> 3);
-        this.size = size;
     }
 
     public void init(int size) {
@@ -41,7 +40,7 @@ public class BufferReader {
 
     public long getLong() {
         if (readBuffer) {
-            return Buffer.get(offset ++);
+            return ABuffer.get(offset ++);
         }
         try {
             return ByteUtil.bytes2long(val, offset);
@@ -52,5 +51,9 @@ public class BufferReader {
 
     public int getSize() {
         return size;
+    }
+
+    public boolean isReadBuffer() {
+        return readBuffer;
     }
 }

@@ -1,13 +1,13 @@
 package io.openmessaging.store;
 
 import io.openmessaging.Message;
-import io.openmessaging.buffer.Buffer;
 import io.openmessaging.buffer.BufferReader;
 import io.openmessaging.common.Const;
 import io.openmessaging.index.TIndex;
 import io.openmessaging.util.DynamicArray;
 import io.openmessaging.util.SimpleThreadLocal;
 
+import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,7 +28,7 @@ public class MsgReader {
 
     MsgReader() {}
 
-    MsgReader(TIndex index){
+    public MsgReader(TIndex index){
         this.index = index;
         bodyByte = SimpleThreadLocal.withInitial(
                 () -> new DynamicArray<>(25_0000, 10000, size -> {
@@ -47,11 +47,7 @@ public class MsgReader {
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         List<Message> messages = new LinkedList<>();
         DynamicArray<Message> byteObjectPool = bodyByte.get();
-        Vfs.VfsEnum.at.vfs.cache();
-//        IndexIterator indexIterator = index.getIterator(tMin, tMax);
-        IndexIterator indexIterator = new IndexIterator(new TBits());
-        indexIterator.initBase(1, (int)((3L * Integer.MAX_VALUE) >>> 3));
-        indexIterator.setEndNo((int)(1000 + (3L * Integer.MAX_VALUE) >>> 3));
+        IndexIterator indexIterator = index.getIterator(tMin, tMax);
         int length = indexIterator.getLength();
         long start = System.currentTimeMillis();
 
@@ -60,6 +56,8 @@ public class MsgReader {
 
         BufferReader as = asFuture.get();
         BufferReader bodies = bodiesFuture.get();
+
+        System.out.println("read aMin:" + aMin + " aMax:" + aMax + " tMin:" + tMin + " tMax:" + tMax + " isReadBuffer:" + as.isReadBuffer());
 
         long end = System.currentTimeMillis();
         time.getAndAdd(end - start);

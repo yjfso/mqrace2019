@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch;
  * @author yinjianfeng
  * @date 2019/9/1
  */
-public class Buffer {
+public class ABuffer {
 
     public enum InBuffer {
         //
@@ -25,21 +25,28 @@ public class Buffer {
 
     private static CountDownLatch latch = new CountDownLatch(1);
 
-    final static int LONG_NUM_IN_1G = 1 << 27;
+    static long BUFFER_OFFSET;
 
-    final static int JVM_END = 1 << 28;
-
-    public final static long BUFFER_OFFSET = 3L * Integer.MAX_VALUE;
-
-    public final static long BUFFER_END = 5L * Integer.MAX_VALUE;
+    static long BUFFER_END;
 
     public static ByteBuffer requireDirect(int size) {
         return directBuffer.require(size);
     }
 
-    public static void writeDone() {
+    public static void writeDone(int no) {
         directBuffer.clear();
-        jvmBuffer = new JvmBuffer();
+
+        //计算缓存位置
+        long availableLength = DirectBuffer.LENGTH + JvmBuffer.LENGTH;
+        if (availableLength >= no) {
+            BUFFER_OFFSET = 0;
+            BUFFER_END = no;
+        } else {
+            BUFFER_OFFSET = (no - availableLength) >> 1;
+            BUFFER_END = availableLength + BUFFER_OFFSET;
+        }
+        BUFFER_OFFSET <<= 3;
+        BUFFER_END <<= 3;
     }
 
     public static InBuffer inBuffer(long offset, int size) {
@@ -63,20 +70,24 @@ public class Buffer {
 
     public static void cacheA(FileChannel fileChannel) {
         try {
+            System.out.println("======start cache a " + System.currentTimeMillis() + "=========");
+            jvmBuffer = new JvmBuffer();
             jvmBuffer.write(fileChannel);
-            directBuffer.write(fileChannel);
+
+            directBuffer.write(fileChannel, (int) (BUFFER_END - BUFFER_OFFSET - (JvmBuffer.LENGTH << 3)));
+            System.out.println("======end cache a " + System.currentTimeMillis() + "=========");
             caching = false;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         latch.countDown();
     }
 
     public static long get(int offset) {
-        if (offset < JVM_END) {
+        if (offset < JvmBuffer.LENGTH) {
             return jvmBuffer.getLong(offset);
         } else {
-            return directBuffer.getLong(offset - JVM_END);
+            return directBuffer.getLong(offset - JvmBuffer.LENGTH);
         }
     }
 }
