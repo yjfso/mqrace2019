@@ -1,12 +1,13 @@
 package io.openmessaging.buffer;
 
+import io.openmessaging.util.UnsafeHolder;
+
 import java.io.IOException;
 import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.openmessaging.buffer.ABuffer.BUFFER_END;
-import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
-import static io.openmessaging.buffer.ABuffer.cachingPos;
+import static io.openmessaging.buffer.ABuffer.*;
+import static io.openmessaging.common.Const.ARRAY_LONG_BASE_OFFSET;
 
 /**
  * @author yinjianfeng
@@ -63,6 +64,7 @@ public class JvmBuffer {
     }
 
     public long getLong(int pos) {
-        return val[pos];
+        return UnsafeHolder.UNSAFE.getLong(val, ARRAY_LONG_BASE_OFFSET + (pos << 3));
+//        return val[pos];
     }
 }

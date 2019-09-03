@@ -17,7 +17,7 @@ public class DirectBuffer {
 
     private int pos;
 
-    final static int LENGTH = (Integer.MAX_VALUE - MAX_GET_MSG_NUM * 42 * 20) >> 3;
+    final static int LENGTH = (Integer.MAX_VALUE - MAX_GET_MSG_NUM * 42 * 15) >> 3;
 
     private Buffer buffer = ByteBuffer.allocateDirect(LENGTH << 3);
 

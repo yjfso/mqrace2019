@@ -89,7 +89,7 @@ public class Vfs {
 
     private long writePos;
 
-    private long writeDonePos;
+    private volatile long writeDonePos;
 
     private AsynchronousFileChannel asyncFileChannel;
 
@@ -192,6 +192,15 @@ public class Vfs {
                 }
             }
             fileChannelLocal.get().position(offset).read(byteBuffer);
+            while (byteBuffer.position() == 0) {
+                try {
+                    Thread.sleep(1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                System.out.println("read 0...");
+                fileChannelLocal.get().position(offset).read(byteBuffer);
+            }
             byteBuffer.flip();
         } catch (Exception e) {
             System.out.println("read offset:" + offset + "size:" + byteBuffer.limit() + "catch error");

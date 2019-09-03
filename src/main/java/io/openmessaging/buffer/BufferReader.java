@@ -57,13 +57,7 @@ public class BufferReader {
             return ABuffer.get(offset ++);
         }
         try {
-            try {
-                return val.getLong(offset);
-            } catch (Exception e) {
-                System.out.println("read offset:" + offset + " val:"+val);
-                throw e;
-            }
-//            return ByteUtil.bytes2long(val, offset);
+            return val.getLong(offset);
         } finally {
             offset += 8;
         }
