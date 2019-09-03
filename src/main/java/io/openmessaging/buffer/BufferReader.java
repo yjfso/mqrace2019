@@ -17,7 +17,7 @@ public class BufferReader {
     private ByteBuffer val;
 //    private byte[] val;
 
-    private volatile boolean readBuffer;
+    private boolean readBuffer;
 
     private int offset;
 
@@ -57,7 +57,12 @@ public class BufferReader {
             return ABuffer.get(offset ++);
         }
         try {
-            return val.getLong(offset);
+            try {
+                return val.getLong(offset);
+            } catch (Exception e) {
+                System.out.println("read offset:" + offset + " val:"+val);
+                throw e;
+            }
 //            return ByteUtil.bytes2long(val, offset);
         } finally {
             offset += 8;

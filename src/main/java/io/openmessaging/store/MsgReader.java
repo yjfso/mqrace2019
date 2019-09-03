@@ -7,6 +7,7 @@ import io.openmessaging.index.TIndex;
 import io.openmessaging.util.DynamicArray;
 import io.openmessaging.util.SimpleThreadLocal;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,7 +44,6 @@ public class MsgReader {
     }
 
     public List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        List<Message> messages = new LinkedList<>();
         DynamicArray<Message> byteObjectPool = bodyByte.get();
         IndexIterator indexIterator = index.getIterator(tMin, tMax);
         int length = indexIterator.getLength();
@@ -51,11 +51,12 @@ public class MsgReader {
         BufferReader as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
         BufferReader bodies = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
 
-        System.out.println("read tMin:" +tMin+ " tMax:"+tMax+" startNo:"+indexIterator.getStartNo()+" inBuffer: " + as.isReadBuffer() + "; length:" + length);
+//        System.out.println("read tMin:" +tMin+ " tMax:"+tMax+" startNo:"+indexIterator.getStartNo()+" inBuffer: " + as.isReadBuffer() + "; length:" + length);
         long bodiesAddress = bodies.getAddress();
 //        BufferReader as = asFuture.get();
 //        BufferReader bodies = bodiesFuture.get();
 
+        List<Message> messages = new ArrayList<>(length);
         for (int i = 0; i < length; i++) {
             long t = indexIterator.nextT();
             if (t > tMax) {
