@@ -1,7 +1,5 @@
 package io.openmessaging.util;
 
-import java.util.List;
-
 /**
  * @author yinjianfeng
  * @date 2019/8/15
@@ -12,19 +10,22 @@ public class StreamLoserTree<T extends StreamTreeNode<T, K>, K> {
 
     private byte size;
 
-    private List<T> leaves;
+    private T[] leaves;
 
-    public StreamLoserTree(List<T> leaves) {
+    public StreamLoserTree(T[] leaves) {
         this.leaves = leaves;
-        this.size = (byte) leaves.size();
+        this.size = (byte) leaves.length;
         this.tree = new byte[size];
         rebuild();
     }
 
     private void remove(int index) {
-        leaves.remove(index);
+//        leaves.remove(index);
+        for (int i = index; i < size-1; i++) {
+            leaves[i] = leaves[i + 1];
+        }
         if (size-- > 0) {
-            this.tree = new byte[size];
+//            this.tree = new byte[size];
             rebuild();
         }
     }
@@ -43,7 +44,7 @@ public class StreamLoserTree<T extends StreamTreeNode<T, K>, K> {
             System.out.println("threadMessages size = 0, write done");
             return null;
         }
-        T t = leaves.get(tree[0]);
+        T t = leaves[tree[0]];
         K k = t.pop();
         if (t.isEmpty()) {
             System.out.println(t + " is empty, will remove");
@@ -66,8 +67,8 @@ public class StreamLoserTree<T extends StreamTreeNode<T, K>, K> {
                 winner = tree[node];
                 tree[node] = tmp;
             } else {
-                T t1 = leaves.get(winner);
-                T t2 = leaves.get(tree[node]);
+                T t1 = leaves[winner];
+                T t2 = leaves[tree[node]];
                 if (t2.lessAndEqual(t1)) {
                     byte tmp = winner;
                     winner = tree[node];

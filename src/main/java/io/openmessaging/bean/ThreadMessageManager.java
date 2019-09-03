@@ -37,7 +37,8 @@ public class ThreadMessageManager {
                 e.printStackTrace();
             }
         }
-        streamLoserTree = new StreamLoserTree<>(TM);
+        System.out.println("init threadMessageManager with thread:" + TM.size());
+        streamLoserTree = new StreamLoserTree<>(TM.toArray(new ThreadMessage[0]));
     }
 
     public Ring<Message> dumpStoreMsg() {
