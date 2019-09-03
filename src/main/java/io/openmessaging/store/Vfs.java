@@ -192,13 +192,14 @@ public class Vfs {
                 }
             }
             fileChannelLocal.get().position(offset).read(byteBuffer);
-            while (byteBuffer.position() == 0) {
+            while (byteBuffer.hasRemaining()) {
                 try {
-                    Thread.sleep(1);
+                    Thread.sleep(30);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 System.out.println("read 0...");
+                byteBuffer.position(0);
                 fileChannelLocal.get().position(offset).read(byteBuffer);
             }
             byteBuffer.flip();
