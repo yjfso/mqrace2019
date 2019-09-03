@@ -31,22 +31,22 @@ public class LoserTreeTest {
             }).start();
         }
         Thread.sleep(100);
-        StreamLoserTree<ThreadMessage, Message> streamLoserTree = new StreamLoserTree<>(threadMessageManager.getTM());
-        long last = 0;
-        StringBuffer stringBuffer = new StringBuffer();
-        while (true) {
-            Message message = streamLoserTree.askWinner();
-            if (message == null) {
-                break;
-            }
-            if (message.getT() < last) {
-                System.out.println("============");
-                System.out.println(message.getT());
-                System.exit(0);
-            }
-            stringBuffer.append(message.getT()).append(",");
-//            System.out.println(message.getT());
-        }
-        System.out.println(stringBuffer);
+//        StreamLoserTree<ThreadMessage, Message> streamLoserTree = new StreamLoserTree<>(threadMessageManager.getTM());
+//        long last = 0;
+//        StringBuffer stringBuffer = new StringBuffer();
+//        while (true) {
+//            Message message = streamLoserTree.askWinner();
+//            if (message == null) {
+//                break;
+//            }
+//            if (message.getT() < last) {
+//                System.out.println("============");
+//                System.out.println(message.getT());
+//                System.exit(0);
+//            }
+//            stringBuffer.append(message.getT()).append(",");
+////            System.out.println(message.getT());
+//        }
+//        System.out.println(stringBuffer);
     }
 }
