@@ -96,7 +96,6 @@ public class MsgDumper {
 
     void writeDone () {
         ABuffer.writeDone(index.writeDone());
-        Vfs.VfsEnum.at.vfs.cache();
 
         EXECUTOR_SERVICE.submit(
                 () -> {
@@ -114,6 +113,7 @@ public class MsgDumper {
                         aBufferRing = null;
                         bodyBufferRing = null;
                         System.out.println("=====write done======");
+                        Vfs.VfsEnum.at.vfs.cache();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
