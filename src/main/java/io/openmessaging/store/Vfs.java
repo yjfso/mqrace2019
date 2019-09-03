@@ -60,7 +60,7 @@ public class Vfs {
                 bufferReader.initFromBuffer(offset);
             } else {
                 bufferReader.init(size);
-                vfs.readByFileChannel(offset, bufferReader);
+                vfs.readByFileChannel(offset, bufferReader.getByteBuffer());
             }
 //            executorService.submit(
 //                    () -> {
@@ -228,10 +228,9 @@ public class Vfs {
         }
     }
 
-    private void readByFileChannel(long offset, BufferReader bufferReader) {
+    private void readByFileChannel(long offset, ByteBuffer byteBuffer) {
         try {
-            ByteBuffer byteBuffer = bufferReader.getByteBuffer();
-            if (writing && ((byteBuffer.limit() + offset) > writePos)) {
+            while (writing && ((byteBuffer.limit() + offset) > writePos)) {
                 try {
                     Thread.sleep(1);
                     System.out.println("read from file, but writing unfinished...");
@@ -239,8 +238,10 @@ public class Vfs {
                     e.printStackTrace();
                 }
             }
+            String readBefore = byteBuffer.toString();
             fileChannelLocal.get().position(offset).read(byteBuffer);
-            bufferReader.getByteBuffer().flip();
+            System.out.println("offset:" + offset + "|" + byteBuffer.toString() + "|" + readBefore);
+            byteBuffer.flip();
 //            int startNo = (int)(offset >>> FILE_SIZE);
 //            int endNo = (int)((offset + size) >>> FILE_SIZE);
 //            int realOffset = (int)(offset - ((long) startNo << FILE_SIZE));
@@ -256,7 +257,7 @@ public class Vfs {
 //                ((MappedByteBuffer)mappedByteBuffer(endNo).position(0)).get(bufferReader.getBytes(), length, size - length);
 //            }
         } catch (Exception e) {
-            System.out.println("read offset:" + offset + "size:" + bufferReader.getSize() + "catch error");
+            System.out.println("read offset:" + offset + "size:" + byteBuffer.limit() + "catch error");
             e.printStackTrace();
             throw new RuntimeException(e);
         }
