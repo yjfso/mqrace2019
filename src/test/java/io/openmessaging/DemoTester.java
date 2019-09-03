@@ -17,7 +17,7 @@ public class DemoTester {
     public static void main(String args[]) throws Exception {
         //评测相关配置
         //发送阶段的发送数量，也即发送阶段必须要在规定时间内把这些消息发送完毕方可
-        int msgNum  = 1_0000_0000;
+        int msgNum  = 1_000_0000;
         //发送阶段的最大持续时间，也即在该时间内，如果消息依然没有发送完毕，则退出评测
         int sendTime = 30 * 60 * 1000;
         //查询阶段的最大持续时间，也即在该时间内，如果消息依然没有消费完毕，则退出评测
@@ -121,10 +121,10 @@ public class DemoTester {
                     buffer.putLong(26, count + BASE_);
                     // 为测试方便, 插入的是有规律的数据, 不是实际测评的情况
                     messageStore.put(new Message(count + BASE_, count+ BASE_, buffer.array()));
-//                    if ((count & 0x1L) == 0) {
-//                        //偶数count多加一条消息
-//                        messageStore.put(new Message(count+ BASE_, count+ BASE_, buffer.array()));
-//                    }
+                    if ((count & 0x1L) == 0) {
+                        //偶数count多加一条消息
+                        messageStore.put(new Message(count+ BASE_, count+ BASE_, buffer.array()));
+                    }
                 } catch (Throwable t) {
                     t.printStackTrace();
                     System.exit(-1);
@@ -198,14 +198,14 @@ public class DemoTester {
                             checkError();
                         }
 
-//                        //偶数需要多验证一次
-//                        if ((index1 & 0x1) == 0 && iter.hasNext()) {
-//                            msg = iter.next();
-//                            if (msg.getA() != msg.getT() || msg.getA() != index1
-//                                    || ByteBuffer.wrap(msg.getBody()).getLong(26) != index1) {
-//                                checkError();
-//                            }
-//                        }
+                        //偶数需要多验证一次
+                        if ((index1 & 0x1) == 0 && iter.hasNext()) {
+                            msg = iter.next();
+                            if (msg.getA() != msg.getT() || msg.getA() != index1
+                                    || ByteBuffer.wrap(msg.getBody()).getLong(26) != index1) {
+                                checkError();
+                            }
+                        }
 
                         ++index1;
                     }
@@ -287,11 +287,11 @@ public class DemoTester {
                     long count = 0;
                     if (evenIndex1 <= evenIndex2) {
                         //顺序数之和
-                        long sum = ((long)(index2 + index1) * (index2 - index1 + 1)) >>> 1;
+                        long sum1 = ((long)(index2 + index1) * (index2 - index1 + 1)) >>> 1;
                         //重复的偶数之和
-//                        long sum2 = ((long)(evenIndex1 + evenIndex2) * ((evenIndex2 - evenIndex1 >>> 1) + 1)) >>> 1;
-//                        long sum = sum1 + sum2;
-                        count = index2 - index1 + 1;// + (evenIndex2 - evenIndex1 >>> 1) + 1;
+                        long sum2 = ((long)(evenIndex1 + evenIndex2) * ((evenIndex2 - evenIndex1 >>> 1) + 1)) >>> 1;
+                        long sum = sum1 + sum2;
+                        count = index2 - index1 + 1 + (evenIndex2 - evenIndex1 >>> 1) + 1;
                         res = sum / count;
                     } else {
                         //顺序数之和

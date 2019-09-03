@@ -65,8 +65,9 @@ public class DynamicIntArray {
 
     public int get(int pos) {
         if (pos > initSize) {
-            int no = (pos - initSize) >>> sizeBit;
-            int rPos = (pos - initSize) - (no << sizeBit);
+            pos -= initSize;
+            int no = pos >>> sizeBit;
+            int rPos = pos - (no << sizeBit);
             return buffers.get(no + 1)[rPos];
         }
         return buffer[pos];

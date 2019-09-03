@@ -11,6 +11,7 @@ import java.nio.channels.FileChannel;
 
 import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
 import static io.openmessaging.common.Const.MAX_GET_MSG_NUM;
+import static io.openmessaging.common.Const.T_SIZE;
 import static io.openmessaging.util.UnsafeHolder.UNSAFE;
 
 /**
@@ -21,7 +22,7 @@ public class DirectBuffer {
 
     private int pos;
 
-    final static int LENGTH = (Integer.MAX_VALUE - MAX_GET_MSG_NUM * 42 * 15) >> 3;
+    final static int LENGTH = (Integer.MAX_VALUE - T_SIZE - MAX_GET_MSG_NUM * 42 * 15) >> 3;
 
     private ByteBuffer buffer = ByteBuffer.allocateDirect(LENGTH << 3);
 
@@ -37,15 +38,14 @@ public class DirectBuffer {
         }
     }
 
-    public void write(FileChannel fileChannel, int length) {
+    public void write(FileChannel fileChannel, long length) {
         try {
             if (length <= 0) {
                 return;
             }
-            ByteBuffer byteBuffer = (ByteBuffer) buffer;
-            fileChannel.position(BUFFER_OFFSET + (long) JvmBuffer.BYTE_LENGTH);
-            byteBuffer.limit(length);
-            fileChannel.read(byteBuffer);
+            fileChannel.position(BUFFER_OFFSET + JvmBuffer.BYTE_LENGTH);
+            buffer.limit((int)length);
+            fileChannel.read(buffer);
 //            byteBuffer.flip();
         } catch (IOException e) {
             e.printStackTrace();

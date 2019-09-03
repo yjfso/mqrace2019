@@ -1,9 +1,13 @@
 package io.openmessaging.store;
 
 import io.openmessaging.common.Const;
-import io.openmessaging.util.DynamicIntArray;
+import io.openmessaging.util.UnsafeHolder;
+
+import java.nio.ByteBuffer;
 
 import static io.openmessaging.common.Const.T_INTERVAL_NUM;
+import static io.openmessaging.common.Const.T_SIZE;
+import static io.openmessaging.util.UnsafeHolder.UNSAFE;
 
 /**
  * @author yinjianfeng
@@ -17,9 +21,15 @@ public class TBits {
      * 2、2、3、5
      * 011010010
      */
-    private static DynamicIntArray tByteBuffer = new DynamicIntArray(105_000_000, (byte) 15);
+//    private static DynamicIntArray tByteBuffer = new DynamicIntArray(105_000_000, (byte) 15);
 
-//    private static IntBuffer tByteBuffer = DirectBuffer.require(_1G).asIntBuffer();
+    private static ByteBuffer tByteBuffer = ByteBuffer.allocateDirect(T_SIZE);//.asIntBuffer();
+
+    long tAddress = UNSAFE.getLong(tByteBuffer, Const.BUFFER_ADDRESS_OFFSET);
+
+    private int no;
+
+    private long nowAddress = tAddress;
 
     private final static byte BIT_LENGTH = 32;
 
@@ -36,7 +46,8 @@ public class TBits {
             } else {
                 val |= (1 << surplusNum) - 1;
             }
-            tByteBuffer.put(val);
+            put(val);
+//            tByteBuffer.put(val);
             val = 0;
 
             int writeLength = length - surplusNum;
@@ -51,7 +62,8 @@ public class TBits {
             }
 
             for (; multiple > 0; multiple--) {
-                tByteBuffer.put(-1);
+                put(-1);
+//                tByteBuffer.put(-1);
             }
 
         } else {
@@ -62,20 +74,25 @@ public class TBits {
 
     public void clearBit(int length) {
         if (length == surplusNum) {
-            tByteBuffer.put(val);
+            put(val);
+//            tByteBuffer.put(val);
             val = 0;
             surplusNum = BIT_LENGTH;
         } else if (length > surplusNum) {
-            tByteBuffer.put(val);
+//            tByteBuffer.put(val);
+            put(val);
             val = 0;
 
             int writeLength = length - surplusNum;
             int multiple = writeLength >>> BIT_LENGTH_MOVE;
             surplusNum = (byte) (BIT_LENGTH - (writeLength - (multiple << BIT_LENGTH_MOVE)));
 
-            for (; multiple > 0; multiple--) {
-                tByteBuffer.put(0);
-            }
+//            UnsafeHolder.UNSAFE.put(pos, val);
+            nowAddress += (multiple << 2);
+            no += multiple;
+//            for (; multiple > 0; multiple--) {
+//                tByteBuffer.put(0);
+//            }
 
         } else {
             surplusNum -= length;
@@ -89,16 +106,16 @@ public class TBits {
         }
         int zeroNum = dst;
 
-        int length = tByteBuffer.getPos() - pos;
+        int length = no - pos;
         for (int i = 0; i < length; i++) {
-            int val = tByteBuffer.get(pos);
+            int val = get(pos);
             int num0 = 0;
             while(val != -1) {
                 val = val | (val + 1);
                 num0++;
             }
             if (zeroNum <= num0) {
-                val = tByteBuffer.get(pos);
+                val = get(pos);
                 for (int j = BIT_LENGTH - 1; j >= 0; j--) {
                     if ((val & (1 << j)) == 0) {
                         if (--zeroNum == 0) {
@@ -119,16 +136,16 @@ public class TBits {
     public long endNo(int pos, int dst) {
         int zeroNum = dst + 1;
 
-        int length = tByteBuffer.getPos() - pos;
+        int length = no - pos;
         for (int i = 0; i < length; i++) {
-            int val = tByteBuffer.get(pos++);
+            int val = get(pos++);
             int num0 = 0;
             while(val != -1) {
                 val = val | (val + 1);
                 num0++;
             }
             if (zeroNum <= num0) {
-                val = tByteBuffer.get(pos - 1);
+                val = get(pos - 1);
                 for (int j = BIT_LENGTH - 1; j >= 0; j--) {
                     if ((val & (1 << j)) == 0) {
                         if (--zeroNum == 0) {
@@ -145,15 +162,27 @@ public class TBits {
 
     public int getPos() {
         if (surplusNum != BIT_LENGTH) {
-            tByteBuffer.put(val);
+            put(val);
+//            tByteBuffer.put(val);
             val = 0;
             surplusNum = BIT_LENGTH;
         }
-        return tByteBuffer.getPos();
+        return no;
+    }
+
+    private int get(int pos) {
+        return UnsafeHolder.UNSAFE.getInt(tAddress + (pos << 2));
+    }
+
+    private void put(int val) {
+        UnsafeHolder.UNSAFE.putLong(nowAddress, val);
+        no ++;
+        nowAddress += 4;
     }
 
     public void writeDone() {
-        tByteBuffer.put(val);
+        put(val);
+//        tByteBuffer.put(val);
 //        tByteBuffer.slice();
 //        tByteBuffer.flip();
 //        tByteBuffer = tByteBuffer.slice();
@@ -161,7 +190,8 @@ public class TBits {
     }
 
     public boolean nextT(IndexIterator indexIterator) {
-        int val = tByteBuffer.get(indexIterator.baseCursor);
+        int val = get(indexIterator.baseCursor);
+
         while (true) {
             while (indexIterator.cursor >= 0) {
                 if ((val & (1 << indexIterator.cursor--)) == 0) {
@@ -173,7 +203,7 @@ public class TBits {
                     return true;
                 }
             }
-            val = tByteBuffer.get(++indexIterator.baseCursor);
+            val = get(++indexIterator.baseCursor);
             indexIterator.cursor = BIT_LENGTH - 1;
         }
     }

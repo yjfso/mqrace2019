@@ -15,7 +15,7 @@ import static io.openmessaging.common.Const.LONG_ARRAY_BASE_OFFSET;
  */
 public class JvmBuffer {
 
-    final static int LENGTH = (int) (((500L << 20) + Integer.MAX_VALUE) >> 3);
+    final static int LENGTH = (int) (((700L << 20) + Integer.MAX_VALUE) >> 3);
 
     final static long BYTE_LENGTH = (long)LENGTH << 3;
 

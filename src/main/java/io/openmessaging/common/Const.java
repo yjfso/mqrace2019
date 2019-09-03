@@ -28,6 +28,8 @@ public class Const {
 
     public final static int T_INTERVAL_NUM = (1 << 8) - 1;
 
+    public final static int T_SIZE = 600 << 20;
+
     public final static int MAX_GET_MSG_NUM = 50_0000;
 
     public final static int THREAD_NUM = 4;
