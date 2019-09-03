@@ -7,10 +7,14 @@ import io.openmessaging.common.Const;
 import io.openmessaging.index.TIndex;
 import io.openmessaging.util.ConcurrentWriteRing;
 import io.openmessaging.util.Ring;
+import io.openmessaging.util.UnsafeHolder;
 
 import java.nio.ByteBuffer;
 
 import static io.openmessaging.common.Common.EXECUTOR_SERVICE;
+import static io.openmessaging.common.Const.ARRAY_BASE_OFFSET;
+import static io.openmessaging.common.Const.BODY_SIZE;
+import static io.openmessaging.util.UnsafeHolder.UNSAFE;
 
 /**
  * @author yinjianfeng
@@ -30,7 +34,7 @@ public class MsgDumper {
             .fill(() -> ABuffer.requireDirect(8 * Const.MAX_DUMP_SIZE));
 
     private ConcurrentWriteRing<ByteBuffer> bodyBufferRing = new ConcurrentWriteRing<>(new ByteBuffer[Const.WRITE_ASYNC_NUM])
-            .fill(() -> ABuffer.requireDirect(Const.BODY_SIZE * Const.MAX_DUMP_SIZE));
+            .fill(() -> ABuffer.requireDirect(BODY_SIZE * Const.MAX_DUMP_SIZE));
 
     public MsgDumper(TIndex index, ThreadMessageManager threadMessageManager) {
         this.index = index;
@@ -54,15 +58,23 @@ public class MsgDumper {
         ByteBuffer atBuffer = aBufferRing.popWait();
         ByteBuffer bodyBuffer = bodyBufferRing.popWait();
 
+        long atAddress = UNSAFE.getLong(atBuffer, Const.BUFFER_ADDRESS_OFFSET);
+        long bodyAddress = UNSAFE.getLong(bodyBuffer, Const.BUFFER_ADDRESS_OFFSET);
+        int i = 0;
         while ((message = messages.pop()) != null) {
             index.put(message.getT());
             try {
-                atBuffer.putLong(message.getA());
-                bodyBuffer.put(message.getBody());
+                UNSAFE.putLong(atAddress, Long.reverseBytes(message.getA()));
+                UnsafeHolder.UNSAFE.copyMemory(message.getBody(), ARRAY_BASE_OFFSET, null, bodyAddress, BODY_SIZE);
+                bodyAddress += BODY_SIZE;
+                atAddress += 8;
+                i ++;
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+        atBuffer.position(i * 8);
+        bodyBuffer.position(i * BODY_SIZE);
         writeToFile(atBuffer, atFile, aBufferRing);
         writeToFile(bodyBuffer, bodyFile, bodyBufferRing);
     }
