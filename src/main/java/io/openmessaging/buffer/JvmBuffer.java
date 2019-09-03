@@ -28,12 +28,17 @@ public class JvmBuffer {
             long startByteOffset = BUFFER_OFFSET;
 
             for (int i = 0; i <= readTime; i++) {
-                long byteLength = Math.min(endBuffer - startByteOffset, 1 << 30);
+                long byteLength;
+                if (i == readTime) {
+                    byteLength = endBuffer - startByteOffset;
+                } else {
+                    byteLength = 1 << 30;
+                }
 
                 LongBuffer longBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, startByteOffset, byteLength)
                         .asLongBuffer();
                 longBuffer.get(val, (i << 27), (int)byteLength >>> 3);
-                startByteOffset += (1 << 30);
+                startByteOffset += byteLength;
                 cachingPos = startByteOffset;
             }
         } catch (IOException e) {

@@ -74,6 +74,7 @@ public class ABuffer {
             jvmBuffer = new JvmBuffer();
             jvmBuffer.write(fileChannel);
 
+            System.out.println("======jvm cache a done 【" + cachingPos + "】 " + System.currentTimeMillis() + "=========");
             directBuffer.write(fileChannel, (int) (BUFFER_END - BUFFER_OFFSET - (JvmBuffer.LENGTH << 3)));
             System.out.println("======end cache a " + System.currentTimeMillis() + "=========");
             caching = false;
