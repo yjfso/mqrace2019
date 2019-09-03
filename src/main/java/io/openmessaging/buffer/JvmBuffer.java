@@ -17,7 +17,7 @@ public class JvmBuffer {
 
     final static int LENGTH = (int) (((500L << 20) + Integer.MAX_VALUE) >> 3);
 
-    final static long BYTE_LENGTH = LENGTH << 3;
+    final static long BYTE_LENGTH = (long)LENGTH << 3;
 
     private final long[] val = new long[LENGTH];
 
