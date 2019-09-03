@@ -7,7 +7,7 @@ import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.openmessaging.buffer.ABuffer.*;
-import static io.openmessaging.common.Const.ARRAY_LONG_BASE_OFFSET;
+import static io.openmessaging.common.Const.LONG_ARRAY_BASE_OFFSET;
 
 /**
  * @author yinjianfeng
@@ -17,13 +17,15 @@ public class JvmBuffer {
 
     final static int LENGTH = (int) (((500L << 20) + Integer.MAX_VALUE) >> 3);
 
+    final static long BYTE_LENGTH = LENGTH << 3;
+
     private final long[] val = new long[LENGTH];
 
     private long[] secondVal;
 
     public void write(FileChannel fileChannel) {
         try {
-            long endBuffer = Math.min(BUFFER_OFFSET + (((long) LENGTH) << 3), BUFFER_END);
+            long endBuffer = Math.min(BUFFER_OFFSET + BYTE_LENGTH, BUFFER_END);
             int readTime = (int)((endBuffer - BUFFER_OFFSET) >> 30);
 
             long startByteOffset = BUFFER_OFFSET;
@@ -63,8 +65,8 @@ public class JvmBuffer {
         System.out.println("==============second JVM Buffer end=============");
     }
 
-    public long getLong(int pos) {
-        return UnsafeHolder.UNSAFE.getLong(val, ARRAY_LONG_BASE_OFFSET + (pos << 3));
+    public long getLong(long pos) {
+        return UnsafeHolder.UNSAFE.getLong(val, LONG_ARRAY_BASE_OFFSET + pos);
 //        return val[pos];
     }
 }

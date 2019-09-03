@@ -19,6 +19,8 @@ public class BufferReader {
 
     private boolean readBuffer;
 
+    private long bufferOffset;
+
     private int offset;
 
     private int size;
@@ -33,7 +35,7 @@ public class BufferReader {
 
     public void initFromBuffer(long offset) {
         readBuffer = true;
-        this.offset = (int) ((offset - BUFFER_OFFSET) >> 3);
+        this.bufferOffset = offset - BUFFER_OFFSET;
     }
 
     public void init(int size) {
@@ -54,7 +56,11 @@ public class BufferReader {
 
     public long getLong() {
         if (readBuffer) {
-            return ABuffer.get(offset ++);
+            try {
+                return ABuffer.get(bufferOffset);
+            } finally {
+                bufferOffset += 8;
+            }
         }
         try {
             return val.getLong(offset);

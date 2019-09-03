@@ -3,6 +3,8 @@ package io.openmessaging.buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.openmessaging.buffer.JvmBuffer.BYTE_LENGTH;
+
 /**
  * @author yinjianfeng
  * @date 2019/9/1
@@ -75,7 +77,7 @@ public class ABuffer {
             jvmBuffer.write(fileChannel);
 
             System.out.println("======jvm cache a done 【" + cachingPos + "】 " + System.currentTimeMillis() + "=========");
-            directBuffer.write(fileChannel, (int) (BUFFER_END - BUFFER_OFFSET - (JvmBuffer.LENGTH << 3)));
+            directBuffer.write(fileChannel, (int) (BUFFER_END - BUFFER_OFFSET - BYTE_LENGTH));
             System.out.println("======end cache a " + System.currentTimeMillis() + "=========");
             caching = false;
         } catch (Throwable e) {
@@ -83,11 +85,11 @@ public class ABuffer {
         }
     }
 
-    public static long get(int offset) {
-        if (offset < JvmBuffer.LENGTH) {
+    public static long get(long offset) {
+        if (offset < BYTE_LENGTH) {
             return jvmBuffer.getLong(offset);
         } else {
-            return directBuffer.getLong(offset - JvmBuffer.LENGTH);
+            return directBuffer.getLong(offset - BYTE_LENGTH);
         }
     }
 

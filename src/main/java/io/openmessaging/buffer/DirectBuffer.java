@@ -1,5 +1,8 @@
 package io.openmessaging.buffer;
 
+import io.openmessaging.common.Const;
+import io.openmessaging.util.UnsafeHolder;
+
 import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -8,6 +11,7 @@ import java.nio.channels.FileChannel;
 
 import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
 import static io.openmessaging.common.Const.MAX_GET_MSG_NUM;
+import static io.openmessaging.util.UnsafeHolder.UNSAFE;
 
 /**
  * @author yinjianfeng
@@ -19,13 +23,15 @@ public class DirectBuffer {
 
     final static int LENGTH = (Integer.MAX_VALUE - MAX_GET_MSG_NUM * 42 * 15) >> 3;
 
-    private Buffer buffer = ByteBuffer.allocateDirect(LENGTH << 3);
+    private ByteBuffer buffer = ByteBuffer.allocateDirect(LENGTH << 3);
+
+    private long address = UNSAFE.getLong(buffer, Const.BUFFER_ADDRESS_OFFSET);
 
     public ByteBuffer require(int size) {
         pos += size;
         buffer.limit(pos);
         try {
-            return ((ByteBuffer) buffer).slice();
+            return buffer.slice();
         } finally {
             buffer.position(pos);
         }
@@ -37,11 +43,10 @@ public class DirectBuffer {
                 return;
             }
             ByteBuffer byteBuffer = (ByteBuffer) buffer;
-            fileChannel.position(BUFFER_OFFSET + ((long) JvmBuffer.LENGTH << 3));
+            fileChannel.position(BUFFER_OFFSET + (long) JvmBuffer.BYTE_LENGTH);
             byteBuffer.limit(length);
             fileChannel.read(byteBuffer);
-            byteBuffer.flip();
-            buffer = byteBuffer.asLongBuffer();
+//            byteBuffer.flip();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -52,8 +57,9 @@ public class DirectBuffer {
         buffer.clear();
     }
 
-    public long getLong(int pos) {
-        return ((LongBuffer)buffer).get(pos);
+    public long getLong(long pos) {
+        return Long.reverseBytes(UnsafeHolder.UNSAFE.getLong(address + pos));
+//        return ((LongBuffer)buffer).get(pos);
     }
 
 }
