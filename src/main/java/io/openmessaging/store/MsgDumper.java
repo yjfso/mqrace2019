@@ -10,6 +10,8 @@ import io.openmessaging.util.Ring;
 
 import java.nio.ByteBuffer;
 
+import static io.openmessaging.common.Common.EXECUTOR_SERVICE;
+
 /**
  * @author yinjianfeng
  * @date 2019/9/1
@@ -35,6 +37,15 @@ public class MsgDumper {
         this.threadMessageManager = threadMessageManager;
     }
 
+    private void writeToFile(ByteBuffer byteBuffer, Vfs.VfsEnum vfsEnum, ConcurrentWriteRing<ByteBuffer> ring) {
+        byteBuffer.flip();
+        vfsEnum.write(byteBuffer, e -> {
+            ring.threadSafeAdd(e);
+            e.clear();
+        });
+        byteBuffer.clear();
+    }
+
     private void write(Ring<Message> messages) {
         if (messages.isEmpty()) {
             return;
@@ -51,20 +62,9 @@ public class MsgDumper {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
-        atBuffer.flip();
-        atFile.write(atBuffer, e -> {
-            aBufferRing.threadSafeAdd(e);
-            e.clear();
-        });
-        bodyBuffer.flip();
-        bodyFile.write(bodyBuffer, e -> {
-            bodyBufferRing.threadSafeAdd(e);
-            e.clear();
-        });
-        atBuffer.clear();
-        bodyBuffer.clear();
+        writeToFile(atBuffer, atFile, aBufferRing);
+        writeToFile(bodyBuffer, bodyFile, bodyBufferRing);
     }
 
     void write() {
@@ -83,20 +83,30 @@ public class MsgDumper {
     }
 
     void writeDone () {
-        while (!aBufferRing.isFull() || !bodyBufferRing.isFull()) {
-            try {
-                Thread.sleep(1);
-                System.out.println("wait for write done...");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        Vfs.VfsEnum.at.vfs.writeDone();
-        Vfs.VfsEnum.body.vfs.writeDone();
-        aBufferRing = null;
-        bodyBufferRing = null;
         ABuffer.writeDone(index.writeDone());
         Vfs.VfsEnum.at.vfs.cache();
-        System.out.println("=====write done======");
+
+        EXECUTOR_SERVICE.submit(
+                () -> {
+                    try {
+                        while (!aBufferRing.isFull() || !bodyBufferRing.isFull()) {
+                            try {
+                                Thread.sleep(1);
+                                System.out.println("wait for write done...");
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        Vfs.VfsEnum.at.vfs.writeDone();
+                        Vfs.VfsEnum.body.vfs.writeDone();
+                        aBufferRing = null;
+                        bodyBufferRing = null;
+                        System.out.println("=====write done======");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+        );
+
     }
 }

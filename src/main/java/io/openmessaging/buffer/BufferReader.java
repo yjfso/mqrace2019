@@ -1,9 +1,12 @@
 package io.openmessaging.buffer;
 
+import io.openmessaging.common.Const;
+
 import java.nio.ByteBuffer;
 
 import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
 import static io.openmessaging.common.Const.MAX_GET_MSG_NUM;
+import static io.openmessaging.util.UnsafeHolder.UNSAFE;
 
 /**
  * @author yinjianfeng
@@ -20,9 +23,12 @@ public class BufferReader {
 
     private int size;
 
+    private long address;
+
     public BufferReader(int bitSize) {
 //        val = new byte[bitSize * MAX_GET_MSG_NUM];
         val = ByteBuffer.allocateDirect(bitSize * MAX_GET_MSG_NUM);
+        address = UNSAFE.getLong(val, Const.BUFFER_ADDRESS_OFFSET);
     }
 
     public void initFromBuffer(long offset) {
@@ -64,5 +70,9 @@ public class BufferReader {
 
     public boolean isReadBuffer() {
         return readBuffer;
+    }
+
+    public long getAddress() {
+        return address;
     }
 }

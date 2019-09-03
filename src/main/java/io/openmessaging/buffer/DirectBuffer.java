@@ -37,7 +37,7 @@ public class DirectBuffer {
                 return;
             }
             ByteBuffer byteBuffer = (ByteBuffer) buffer;
-            fileChannel.position(BUFFER_OFFSET + (JvmBuffer.LENGTH << 3));
+            fileChannel.position(BUFFER_OFFSET + ((long) JvmBuffer.LENGTH << 3));
             byteBuffer.limit(length);
             fileChannel.read(byteBuffer);
             byteBuffer.flip();

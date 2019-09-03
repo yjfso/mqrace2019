@@ -29,7 +29,7 @@ public class FileReadTester {
         }
     }
 
-    private static int readNum = 1000000;
+    private static int readNum = 100000;
 
     private static int threadNum = 4;
 

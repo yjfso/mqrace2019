@@ -20,17 +20,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
+import static io.openmessaging.common.Common.EXECUTOR_SERVICE;
 
 /**
  * @author yinjianfeng
  * @date 2019/8/8
  */
 public class Vfs {
-
-    private static ExecutorService executorService = Executors.newFixedThreadPool(1);
 
     public enum VfsEnum {
         //
@@ -84,12 +82,15 @@ public class Vfs {
             body.bufferReaderLocal = null;
 
             at.bufferReaderLocal = SimpleThreadLocal.withInitial(() -> new BufferReader(Const.A_SIZE));
+            EXECUTOR_SERVICE.submit(ABuffer::getMessageDone);
         }
     }
 
     private VfsEnum vfsEnum;
 
     private final static int FILE_SIZE = 30;
+
+    private boolean writing = true;
 
     private long writePos;
 
@@ -121,7 +122,7 @@ public class Vfs {
             makeSureFile(fileName);
             return AsynchronousFileChannel.open(path,
                     new HashSet<OpenOption>(Collections.singletonList(StandardOpenOption.WRITE)),
-                    executorService);
+                    EXECUTOR_SERVICE);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -187,6 +188,7 @@ public class Vfs {
 
     public void writeDone() {
         try {
+            writing = false;
             asyncFileChannel.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -194,7 +196,7 @@ public class Vfs {
     }
 
     public void cache() {
-        executorService.submit(
+        EXECUTOR_SERVICE.submit(
                 () -> {
                     //缓存中4g a到内存
                     ABuffer.cacheA(fileChannel());
@@ -228,7 +230,16 @@ public class Vfs {
 
     private void readByFileChannel(long offset, BufferReader bufferReader) {
         try {
-            fileChannelLocal.get().position(offset).read(bufferReader.getByteBuffer());
+            ByteBuffer byteBuffer = bufferReader.getByteBuffer();
+            if (writing && ((byteBuffer.limit() + offset) > writePos)) {
+                try {
+                    Thread.sleep(1);
+                    System.out.println("read from file, but writing unfinished...");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            fileChannelLocal.get().position(offset).read(byteBuffer);
             bufferReader.getByteBuffer().flip();
 //            int startNo = (int)(offset >>> FILE_SIZE);
 //            int endNo = (int)((offset + size) >>> FILE_SIZE);

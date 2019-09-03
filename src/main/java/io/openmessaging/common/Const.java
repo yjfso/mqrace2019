@@ -1,5 +1,7 @@
 package io.openmessaging.common;
 
+import io.openmessaging.util.UnsafeHolder;
+
 /**
  * @author yinjianfeng
  * @date 2019/8/2
@@ -20,7 +22,7 @@ public class Const {
 
     public final static int MAX_DUMP_SIZE = 64 * 1024;
 
-    public final static int MAX_PUT_SIZE = 800 * 1024;
+    public final static int MAX_PUT_SIZE = 1000 * 1024;
 
     public final static int T_INTERVAL_BIT = 8;
 
@@ -28,4 +30,9 @@ public class Const {
 
     public final static int MAX_GET_MSG_NUM = 50_0000;
 
+    public final static int THREAD_NUM = 4;
+
+    public final static long ARRAY_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(byte[].class);
+
+    public final static long BUFFER_ADDRESS_OFFSET = UnsafeHolder.bufferAddressOffset();
 }

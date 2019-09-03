@@ -7,9 +7,10 @@ import io.openmessaging.index.TIndex;
 import io.openmessaging.util.DynamicArray;
 import io.openmessaging.util.SimpleThreadLocal;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
+
+import static io.openmessaging.util.UnsafeHolder.UNSAFE;
 
 /**
  * @author yinjianfeng
@@ -50,7 +51,7 @@ public class MsgReader {
         BufferReader as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
         BufferReader bodies = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
 
-        ByteBuffer byteBuffer = bodies.getByteBuffer();
+        long bodiesAddress = bodies.getAddress();
 //        BufferReader as = asFuture.get();
 //        BufferReader bodies = bodiesFuture.get();
 
@@ -62,15 +63,23 @@ public class MsgReader {
 
             long a = as.getLong();
             if (a < aMin || a > aMax) {
-                byteBuffer.position(byteBuffer.position() + Const.BODY_SIZE);
+                bodiesAddress += Const.BODY_SIZE;
+//                byteBuffer.position(byteBuffer.position() + Const.BODY_SIZE);
                 continue;
             }
-            Message message = byteObjectPool.get();
-            byteBuffer.get(message.getBody());
+            try {
+                Message message = byteObjectPool.get();
+
+                UNSAFE.copyMemory(null,  bodiesAddress, message.getBody(), Const.ARRAY_BASE_OFFSET, Const.BODY_SIZE);
+                bodiesAddress += Const.BODY_SIZE;
 //            System.arraycopy(bodies.getBytes(), i * Const.BODY_SIZE, message.getBody(), 0, Const.BODY_SIZE);
-            message.setA(a);
-            message.setT(t);
-            messages.add(message);
+                message.setA(a);
+                message.setT(t);
+                messages.add(message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
         byteObjectPool.reset();
         return messages;

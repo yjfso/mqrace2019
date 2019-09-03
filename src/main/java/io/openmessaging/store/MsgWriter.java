@@ -14,19 +14,22 @@ public class MsgWriter {
 
     private SimpleThreadLocal<ThreadMessage> messages;
 
-    private MsgDumper msgDumper;
+    private volatile MsgDumper msgDumper;
 
     private Thread thread;
+
+    private ThreadMessageManager threadMessageManager = new ThreadMessageManager();
+
+    private TIndex index;
 
     MsgWriter() {
     }
 
     MsgWriter(TIndex index){
-        ThreadMessageManager threadMessageManager = new ThreadMessageManager();
         messages = SimpleThreadLocal.withInitial(
                 () -> new ThreadMessage(threadMessageManager)
         );
-        msgDumper = new MsgDumper(index, threadMessageManager);
+        this.index = index;
     }
 
     public void put(Message message) {
@@ -35,6 +38,8 @@ public class MsgWriter {
 
     public void start() {
         thread = new Thread(() -> {
+            index.init();
+            msgDumper = new MsgDumper(index, threadMessageManager);
             try {
                 msgDumper.write();
             } catch (Exception e) {

@@ -6,6 +6,7 @@ import java.nio.channels.FileChannel;
 
 import static io.openmessaging.buffer.ABuffer.BUFFER_END;
 import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
+import static io.openmessaging.buffer.ABuffer.cachingPos;
 
 /**
  * @author yinjianfeng
@@ -13,9 +14,11 @@ import static io.openmessaging.buffer.ABuffer.BUFFER_OFFSET;
  */
 public class JvmBuffer {
 
-    final static int LENGTH = Integer.MAX_VALUE >> 3;
+    final static int LENGTH = (int) (((500L << 20) + Integer.MAX_VALUE) >> 3);
 
     private final long[] val = new long[LENGTH];
+
+    private long[] secondVal;
 
     public void write(FileChannel fileChannel) {
         try {
@@ -31,10 +34,27 @@ public class JvmBuffer {
                         .asLongBuffer();
                 longBuffer.get(val, (i << 27), (int)byteLength >>> 3);
                 startByteOffset += (1 << 30);
+                cachingPos = startByteOffset;
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void getMessageDone(FileChannel fileChannel) {
+        System.out.println("==============second JVM Buffer start=============");
+        long byteLength = Math.min(BUFFER_OFFSET, 300 << 20);
+        int length = (int) (byteLength >> 3);
+        secondVal = new long[length];
+        try {
+            LongBuffer longBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, Math.max(0, BUFFER_OFFSET - 300 << 20), byteLength)
+                    .asLongBuffer();
+            longBuffer.get(secondVal);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        BUFFER_OFFSET -= length;
+        System.out.println("==============second JVM Buffer end=============");
     }
 
     public long getLong(int pos) {

@@ -34,6 +34,7 @@ public class MsgReaderInitiator extends MsgReader {
         if (readInit.tryLock()) {
             msgWriter.stop();
             System.out.println("======reader is ready=======");
+            defaultMessageStore.setMsgReader(msgReader);
             writeDone = true;
         }
         while (!writeDone) {
@@ -43,7 +44,7 @@ public class MsgReaderInitiator extends MsgReader {
                 e.printStackTrace();
             }
         }
-        defaultMessageStore.setMsgReader(msgReader);
+
         return msgReader.getMessage(aMin, aMax, tMin, tMax);
     }
 }

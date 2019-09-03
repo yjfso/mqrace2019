@@ -1,13 +1,7 @@
 package io.openmessaging.buffer;
 
-import io.openmessaging.common.Const;
-import io.openmessaging.store.Vfs;
-
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * @author yinjianfeng
@@ -28,11 +22,13 @@ public class ABuffer {
 
     private static boolean caching = true;
 
-    private static CountDownLatch latch = new CountDownLatch(1);
+    static long cachingPos;
 
-    static long BUFFER_OFFSET;
+    static volatile long BUFFER_OFFSET;
 
     static long BUFFER_END;
+
+    private static FileChannel fileChannel;
 
     public static ByteBuffer requireDirect(int size) {
         return directBuffer.require(size);
@@ -52,21 +48,19 @@ public class ABuffer {
         }
         BUFFER_OFFSET <<= 3;
         BUFFER_END <<= 3;
+        cachingPos = BUFFER_OFFSET;
+    }
+
+    public static void getMessageDone() {
+//        jvmBuffer.getMessageDone(fileChannel);
     }
 
     public static InBuffer inBuffer(long offset, int size) {
-        if (caching) {
-            if (offset < BUFFER_OFFSET || (offset + size) > BUFFER_END) {
-                return InBuffer.none;
-            }
-            try {
-                latch.await();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
         long endOffset = offset + size;
         if (offset >= BUFFER_OFFSET && endOffset <= BUFFER_END) {
+            if (caching && endOffset > cachingPos) {
+                return InBuffer.none;
+            }
             return InBuffer.in;
         } else {
             return InBuffer.none;
@@ -74,6 +68,7 @@ public class ABuffer {
     }
 
     public static void cacheA(FileChannel fileChannel) {
+        ABuffer.fileChannel = fileChannel;
         try {
             System.out.println("======start cache a " + System.currentTimeMillis() + "=========");
             jvmBuffer = new JvmBuffer();
@@ -85,7 +80,6 @@ public class ABuffer {
         } catch (Throwable e) {
             e.printStackTrace();
         }
-        latch.countDown();
     }
 
     public static long get(int offset) {
@@ -94,26 +88,6 @@ public class ABuffer {
         } else {
             return directBuffer.getLong(offset - JvmBuffer.LENGTH);
         }
-    }
-
-    public static void main(String[] args) {
-        String fileName = Const.DATA_PATH + Vfs.VfsEnum.at.name();
-        try {
-            FileChannel fileChannel = FileChannel.open(Paths.get(fileName), StandardOpenOption.READ, StandardOpenOption.WRITE);
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1 << 30);
-            for (int i = 0; i < 1024 * 1024 * 1024; i++) {
-                if (!byteBuffer.hasRemaining()) {
-                    byteBuffer.flip();
-                    fileChannel.write(byteBuffer);
-                    byteBuffer.clear();
-                }
-                byteBuffer.putLong(i);
-            }
-        }catch (Exception e) {
-            e.printStackTrace();
-        }
-        writeDone(1024*1024*1024);
-        Vfs.VfsEnum.at.vfs.cache();
     }
 
 }

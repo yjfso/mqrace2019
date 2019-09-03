@@ -15,10 +15,10 @@ import static io.openmessaging.common.Const.T_INTERVAL_BIT;
 public class TIndex {
 
     //存储每段数据头部的No值
-    public final DynamicIntArray pileIndexes = new DynamicIntArray(16_000_000, (byte) 10);
+    public DynamicIntArray pileIndexes;
 
     //存储每段Tbits头部的index值
-    public final DynamicIntArray pileSegment = new DynamicIntArray(16_000_000, (byte) 10);
+    public DynamicIntArray pileSegment;
 
     private TBits tBits = new TBits();
 
@@ -34,6 +34,11 @@ public class TIndex {
     private int equalNum;
 
     private int no;
+
+    public void init () {
+        pileIndexes = new DynamicIntArray(16_000_000, (byte) 10);
+        pileSegment = new DynamicIntArray(16_000_000, (byte) 10);
+    }
 
     public void put(long t) {
         long pile = t >> T_INTERVAL_BIT;
@@ -77,7 +82,6 @@ public class TIndex {
 
     public IndexIterator getIterator(long tMin, long tMax) {
         IndexIterator indexIterator = indexIteratorLocal.get();
-
         {
             long pile = (tMin >> T_INTERVAL_BIT);
             int realPile = (int)(pile - startPile);
