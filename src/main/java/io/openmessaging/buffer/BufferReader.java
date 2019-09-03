@@ -17,7 +17,7 @@ public class BufferReader {
     private ByteBuffer val;
 //    private byte[] val;
 
-    private boolean readBuffer;
+    private volatile boolean readBuffer;
 
     private int offset;
 

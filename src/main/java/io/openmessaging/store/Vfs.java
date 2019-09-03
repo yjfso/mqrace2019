@@ -58,10 +58,10 @@ public class Vfs {
             BufferReader bufferReader = bufferReaderLocal.get();
             if (inBuffer(offset, size)) {
                 bufferReader.initFromBuffer(offset);
-                return bufferReader;
+            } else {
+                bufferReader.init(size);
+                vfs.readByFileChannel(offset, bufferReader);
             }
-            bufferReader.init(size);
-            vfs.readByFileChannel(offset, bufferReader);
 //            executorService.submit(
 //                    () -> {
 //                        BufferReader bufferReader = future.forceGet();

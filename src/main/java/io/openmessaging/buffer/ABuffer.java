@@ -20,7 +20,7 @@ public class ABuffer {
 
     private static JvmBuffer jvmBuffer;
 
-    private static boolean caching = true;
+    private static volatile boolean caching = true;
 
     static long cachingPos;
 
