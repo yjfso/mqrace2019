@@ -34,7 +34,7 @@ public class Const {
 
     public final static long ARRAY_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(byte[].class);
 
-    public final static long ARRAY_LONG_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(long[].class);
+    public final static long LONG_ARRAY_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(long[].class);
 
     public final static long BUFFER_ADDRESS_OFFSET = UnsafeHolder.bufferAddressOffset();
 }
