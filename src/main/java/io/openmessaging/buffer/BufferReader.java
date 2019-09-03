@@ -1,6 +1,7 @@
 package io.openmessaging.buffer;
 
 import io.openmessaging.common.Const;
+import io.openmessaging.util.UnsafeHolder;
 
 import java.nio.ByteBuffer;
 
@@ -21,7 +22,7 @@ public class BufferReader {
 
     private long bufferOffset;
 
-    private int offset;
+//    private int offset;
 
     private int size;
 
@@ -40,7 +41,7 @@ public class BufferReader {
 
     public void init(int size) {
         readBuffer = false;
-        this.offset = 0;
+        this.bufferOffset = address;
         this.size = size;
         val.clear().limit(size);
     }
@@ -63,9 +64,10 @@ public class BufferReader {
             }
         }
         try {
-            return val.getLong(offset);
+            return Long.reverseBytes(UnsafeHolder.UNSAFE.getLong(bufferOffset));
+//            return val.getLong(offset);
         } finally {
-            offset += 8;
+            bufferOffset += 8;
         }
     }
 

@@ -78,8 +78,8 @@ public class Vfs {
             body.vfs = null;
             body.bufferReaderLocal = null;
 
-            at.bufferReaderLocal = SimpleThreadLocal.withInitial(() -> new BufferReader(Const.A_SIZE));
-            EXECUTOR_SERVICE.submit(ABuffer::getMessageDone);
+//            at.bufferReaderLocal = SimpleThreadLocal.withInitial(() -> new BufferReader(Const.A_SIZE));
+//            EXECUTOR_SERVICE.submit(ABuffer::getMessageDone);
         }
     }
 
