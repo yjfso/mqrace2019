@@ -56,7 +56,7 @@ public class MsgReader {
 //        BufferReader as = asFuture.get();
 //        BufferReader bodies = bodiesFuture.get();
 
-        List<Message> messages = new ArrayList<>(length);
+        List<Message> messages = new ArrayList<>(length + 1);
         for (int i = 0; i < length; i++) {
             long t = indexIterator.nextT();
             if (t > tMax) {
