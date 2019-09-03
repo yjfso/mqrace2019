@@ -28,7 +28,7 @@ public class MsgReader {
 
     MsgReader() {}
 
-    public MsgReader(TIndex index){
+    MsgReader(TIndex index){
         this.index = index;
         bodyByte = SimpleThreadLocal.withInitial(
                 () -> new DynamicArray<>(25_0000, 10000, size -> {
@@ -51,6 +51,7 @@ public class MsgReader {
         BufferReader as = atFile.read(indexIterator.getStartNo() << 3,  length << 3);
         BufferReader bodies = bodyFile.read(indexIterator.getStartNo() * Const.BODY_SIZE,  length * Const.BODY_SIZE);
 
+        System.out.println("read tMin:" +tMin+ " tMax:"+tMax+" startNo:"+indexIterator.getStartNo()+" inBuffer: " + as.isReadBuffer() + "; length:" + length);
         long bodiesAddress = bodies.getAddress();
 //        BufferReader as = asFuture.get();
 //        BufferReader bodies = bodiesFuture.get();
